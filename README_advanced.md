@@ -1,6 +1,6 @@
-# MiniScreenShot v1.1.4
+# MiniScreenShot v1.1.5
 
-Przenośny program do zrzutów ekranu na Windows. Gotowy plik uruchomisz z `dist\MiniScreenShot_v1.1.4.exe`, bez instalowania Pythona.
+Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.5.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.5\MiniScreenShot_v1.1.5.exe`. Python nie jest wymagany do korzystania z gotowego programu.
 
 Aplikacja obsługuje przechwytywanie ekranu i przewijanej zawartości, przycinanie oraz oznaczanie obrazu ołówkiem i półprzezroczystym mazakiem. Duże zrzuty z przewijaniem są proporcjonalnie zmniejszane do około 24 megapikseli lub mniej. Mniejsze zrzuty zachowują pełną rozdzielczość.
 
@@ -64,15 +64,25 @@ Zdarzenia przewijania trafiają do zawartości wybranego okna, aby pasek adresu 
 
 Budowanie korzysta z `MiniScreenShot_v1.1.4.spec`. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są rozpakowywane i dołączane do EXE. Program pozostaje jednym plikiem wykonywalnym.
 
+## Cache i diagnostyka
+
+Pliki robocze są przechowywane w `C:\MiniScreenShot\cache`, w osobnym folderze sesji dla każdej uruchomionej kopii. Jeśli zapis na C: nie jest dozwolony, aplikacja używa `%LOCALAPPDATA%\MiniScreenShot\cache` i nie prosi o uprawnienia administratora. Cache nie zawiera rozpakowywanych przy starcie bibliotek EXE: znajdują się one w `_internal` obok programu.
+
+Limit cache wynosi 512 MB na sesję, z dodatkową rezerwą 256 MB wolnego miejsca na dysku. Fragmenty pojedynczego zrzutu mogą zajmować najwyżej 384 MB. Po osiągnięciu limitu program zachowuje uzyskany fragment jako zrzut częściowy. Zamykanie podglądu zwalnia jego pliki; zamykanie programu usuwa pozostałą sesję. Po awarii kolejny start sprząta wyłącznie oznaczone, nieaktywne sesje MiniScreenShot. Blokada systemowa chroni cache innych uruchomionych kopii. Zapisane PNG użytkownika pozostają na dysku.
+
+`capture_debug.log` znajduje się w `C:\MiniScreenShot\logs` lub w folderze `logs` obok zastępczego cache. Rotacja zachowuje bieżący plik i dwie kopie, po około 512 KB. Odczyt jest dostępny pod przyciskiem `Diagnostyka`.
+
+Wersja 1.1.4 otrzymała zgłoszenie Defendera `Behavior:Win32/DefenseEvasion.A!ml` podczas uruchamiania. W 1.1.5 zastosowano pakiet folderowy bez UPX i samorozpakowania przy starcie. Przyczyna zgłoszenia nie została potwierdzona przez Microsoft. Nie traktuj lokalnego skanu jako gwarancji ani nie dodawaj wyjątków antywirusa. Szczegóły i odnośnik do analizy Microsoft znajdują się w [README.md](README.md#status-zabezpieczeń).
+
 ## Sprawdzenie zmian
 
 Po zainstalowaniu zależności uruchom:
 
 ```bat
-python -m unittest test_preview_layout test_preview_annotations test_image_annotations test_capture_targeting test_window_catalog test_scroll_capture test_capture_scaling test_snapshot_timing test_capture_focus -v
+python -m unittest test_app_storage test_preview_layout test_preview_annotations test_image_annotations test_capture_targeting test_window_catalog test_scroll_capture test_capture_scaling test_snapshot_timing test_capture_focus -v
 ```
 
-Testy interfejsu otwierają okna na pulpicie Windows i sprawdzają układ, dopasowanie obrazu, przycinanie, zapis, systemowe przyciski okna oraz przewijanie strzałkami i touchpadem w obu osiach. Test touchpada sprawdza również natywne komunikaty `WM_MOUSEWHEEL` i `WM_MOUSEHWHEEL` z niewielkimi przesunięciami; sposób kodowania precyzyjnych zdarzeń wynika z [implementacji Tk dla Windows](https://github.com/tcltk/tk/blob/core-9-0-branch/win/tkWinX.c). Podglądy z obrazem testowym zapisują się w `build\preview-review`.
+Testy cache sprawdzają limit miejsca, awaryjny katalog, usuwanie pozostałości po awarii, zachowanie aktywnych sesji i plików bez oznaczenia oraz zwalnianie plików po złożeniu zrzutu i zamknięciu obrazu. Testy interfejsu otwierają okna na pulpicie Windows i sprawdzają układ, dopasowanie obrazu, przycinanie, zapis, systemowe przyciski okna oraz przewijanie strzałkami i touchpadem w obu osiach. Test touchpada sprawdza również natywne komunikaty `WM_MOUSEWHEEL` i `WM_MOUSEHWHEEL` z niewielkimi przesunięciami; sposób kodowania precyzyjnych zdarzeń wynika z [implementacji Tk dla Windows](https://github.com/tcltk/tk/blob/core-9-0-branch/win/tkWinX.c). Podglądy z obrazem testowym zapisują się w `build\preview-review`.
 
 Testy rysowania sprawdzają krycie ołówka, czytelność tekstu pod mazakiem i brak dodatkowego przyciemniania przy wielokrotnym przejechaniu tego samego miejsca jednym ruchem. Obejmują cofanie, zapis i kopiowanie oznaczeń, powiększenie, przewijanie, przycięcie, układ wąskiego okna i rysowanie na dużym obrazie mapowanym bez tworzenia pełnej kopii w pamięci. Sprawdzanie schowka używa atrap i nie zmienia zawartości schowka użytkownika.
 

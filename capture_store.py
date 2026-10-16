@@ -5,10 +5,10 @@ import math
 import mmap
 from pathlib import Path
 import shutil
-import tempfile
 import weakref
 
 from PIL import Image
+from app_storage import cache_session
 
 
 class CaptureStorageError(RuntimeError):
@@ -34,7 +34,12 @@ def _close_live_image(reference):
 
 class _ImageBacking:
     def __init__(self, size):
-        self.directory = tempfile.TemporaryDirectory(prefix="miniscreenshot-result-")
+        session = cache_session()
+        try:
+            session.check_space(size[0] * size[1] * 4)
+        except OSError as exc:
+            raise CaptureStorageError(str(exc)) from exc
+        self.directory = session.temporary_directory(prefix="result-")
         self.file = self.buffer = None
         try:
             self.file = open(Path(self.directory.name) / "image.rgba", "w+b")
@@ -70,7 +75,7 @@ class CaptureStore:
     def __init__(self, memory_pixels=24_000_000, max_output_pixels=24_000_000):
         if max_output_pixels is not None and max_output_pixels < 1:
             raise ValueError("max_output_pixels must be positive or None")
-        self.directory = tempfile.TemporaryDirectory(prefix="miniscreenshot-frames-")
+        self.directory = cache_session().temporary_directory(prefix="frames-")
         self.frames = []
         self.memory_pixels = memory_pixels
         self.max_output_pixels = max_output_pixels
@@ -80,7 +85,7 @@ class CaptureStore:
         self.cache_budget = min(64 * 1024**2, memory_pixels * 4)
         self.bytes_written = 0
         # Reserve room for the assembled image as well as the captured frames.
-        self.storage_budget = min(8 * 1024**3, max(0, (shutil.disk_usage(self.directory.name).free - 256 * 1024**2) // 2))
+        self.storage_budget = min(384 * 1024**2, max(0, (shutil.disk_usage(self.directory.name).free - 256 * 1024**2) // 2))
 
     def __enter__(self):
         return self
@@ -122,6 +127,7 @@ class CaptureStore:
             raise CaptureStorageError("Brakuje miejsca na dalszą część zrzutu. Zachowano przechwycony fragment.")
         path = Path(self.directory.name) / f"{len(self.frames):05d}.rgba"
         try:
+            cache_session().check_space(size)
             with path.open("wb") as target:
                 target.write(frame.convert("RGBA").tobytes())
         except OSError as exc:

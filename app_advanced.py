@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from contextlib import contextmanager
 
-APP_VERSION = "1.1.4"
+APP_VERSION = "1.1.5"
 
 from tk_runtime import prepare_tk_runtime
 
@@ -30,19 +30,11 @@ from windows_scroll import WindowsScrollDriver, ensure_window_foreground
 from capture_progress import CaptureProgress
 from app_identity import apply_app_icon, apply_window_icon, set_process_app_id
 from app_information import InformationDialog
+from app_storage import cache_session, configure_logging
 
-ROOT_DIR = Path(__file__).resolve().parent
 DEFAULT_CAPTURE_DIR = Path("C:/Screenshots")
-DEFAULT_CAPTURE_DIR.mkdir(parents=True, exist_ok=True)
 CAPTURE_DIR = DEFAULT_CAPTURE_DIR
-LOG_PATH = ROOT_DIR / "capture_debug.log"
-
-logging.basicConfig(
-    filename=str(LOG_PATH),
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
-    force=True,
-)
+LOG_PATH = configure_logging()
 logger = logging.getLogger("WindowsCaptureStudio")
 
 
@@ -940,6 +932,7 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             self.set_status("Błąd zrzutu obszaru.")
 
 def main():
+    cache_session()
     set_process_app_id()
     root = tk.Tk()
     app = ScreenCaptureApp(root)

@@ -2,9 +2,9 @@
 
 import os
 import sys
-import tempfile
 import zipfile
 from pathlib import Path
+from app_storage import cache_session
 
 
 def prepare_tk_runtime(cache_dir=None):
@@ -13,7 +13,7 @@ def prepare_tk_runtime(cache_dir=None):
         return
 
     source = Path(sys.base_prefix) / "tcl"
-    cache = Path(cache_dir) if cache_dir else Path(tempfile.gettempdir()) / "MiniScreenShot" / "tk-runtime"
+    cache = Path(cache_dir) if cache_dir else None
     for pattern, folder, entrypoint, variable in (
         ("libtcl*.zip", "tcl_library", "init.tcl", "TCL_LIBRARY"),
         ("libtk*.zip", "tk_library", "tk.tcl", "TK_LIBRARY"),
@@ -23,6 +23,8 @@ def prepare_tk_runtime(cache_dir=None):
         archives = sorted(source.glob(pattern))
         if not archives:
             continue
+        if cache is None:
+            cache = cache_session().path / "tk-runtime"
         archive = archives[-1]
         destination = cache / archive.stem
         library = destination / folder
