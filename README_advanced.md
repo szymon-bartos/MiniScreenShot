@@ -1,6 +1,6 @@
-# MiniScreenShot v1.1.7
+# MiniScreenShot v1.1.8
 
-Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.7.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.7\MiniScreenShot_v1.1.7.exe`. Python nie jest wymagany do korzystania z gotowego programu.
+Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.8.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.8\MiniScreenShot_v1.1.8.exe`. Python nie jest wymagany do korzystania z gotowego programu.
 
 Aplikacja obsługuje przechwytywanie ekranu i przewijanej zawartości, przycinanie oraz oznaczanie obrazu ołówkiem i półprzezroczystym mazakiem. Duże zrzuty z przewijaniem są proporcjonalnie zmniejszane do około 24 megapikseli lub mniej. Mniejsze zrzuty zachowują pełną rozdzielczość.
 
@@ -25,6 +25,7 @@ Podczas pracy pojawia się niewielki panel z animacją, bieżącym etapem i czas
 ## Główne okno
 
 - Karty wyboru trybu: cały ekran, okno aplikacji lub wybrany obszar.
+- Lista **Język / Language** u góry: **Polski** i **English**, z natychmiastową zmianą oraz zapamiętaniem wyboru na kolejne uruchomienie.
 - Zaokrąglone przyciski z podświetleniem i obsługą klawiatury.
 - Przełączniki przewijania w pionie i poziomie, domyślnie wyłączone, aktywne w trybie okna aplikacji. Po ich włączeniu przycisk zmienia nazwę na „Zrób zrzut z przewijaniem”.
 - Widoczny przycisk wykonania zrzutu. W małym oknie ustawienia można przewijać.
@@ -56,6 +57,8 @@ Podczas pracy pojawia się niewielki panel z animacją, bieżącym etapem i czas
 
 Skróty w podglądzie: `Ctrl+S` — zapisz, `Ctrl+C` — kopiuj, `Ctrl+Z` — cofnij oznaczenie, `Ctrl+0` — dopasuj, `Ctrl+1` — 100%.
 
+Zmiana języka aktualizuje również otwarte podglądy, kolory, grubości narzędzi, podpowiedzi przycinania i okno informacji. Zachowuje obraz, powiększenie, zaznaczenie przycinania i historię cofania. Nazwy plików, tytuły zewnętrznych okien oraz tekst na obrazie nie są tłumaczone. Angielskie okno informacji pokazuje tłumaczenie licencji i jej oryginalny polski tekst.
+
 ## Wykonywanie zrzutów
 
 Program obsługuje cały ekran, wybrane okno, zaznaczony wycinek oraz zrzuty okna z przewijaniem. Domyślny folder zapisów to `C:\Screenshots`; można wybrać inny w głównym oknie.
@@ -70,9 +73,9 @@ Zdarzenia przewijania trafiają do zawartości wybranego okna, aby pasek adresu 
 
 1. Zainstaluj Python 3.11+ z obsługą Tkinter i zaznacz „Add Python to PATH”.
 2. Uruchom `start_app.bat`, aby uruchomić program z kodu.
-3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.7\MiniScreenShot_v1.1.7.exe` i paczkę `dist\MiniScreenShot_v1.1.7_windows.zip`.
+3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.8\MiniScreenShot_v1.1.8.exe` i paczkę `dist\MiniScreenShot_v1.1.8_windows.zip`.
 
-Budowanie korzysta z `MiniScreenShot_v1.1.7.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
+Budowanie korzysta z `MiniScreenShot_v1.1.8.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
 
 ## Cache i diagnostyka
 
@@ -81,6 +84,8 @@ Pliki robocze są przechowywane w `C:\MiniScreenShot\cache`, w osobnym folderze 
 Limit cache wynosi 512 MB na sesję, z dodatkową rezerwą 256 MB wolnego miejsca na dysku. Fragmenty pojedynczego zrzutu mogą zajmować najwyżej 384 MB. Po osiągnięciu limitu program zachowuje uzyskany fragment jako zrzut częściowy. Zamykanie podglądu zwalnia jego pliki; zamykanie programu usuwa pozostałą sesję. Po awarii kolejny start sprząta wyłącznie oznaczone, nieaktywne sesje MiniScreenShot. Blokada systemowa chroni cache innych uruchomionych kopii. Zapisane PNG użytkownika pozostają na dysku.
 
 `capture_debug.log` znajduje się w `C:\MiniScreenShot\logs` lub w folderze `logs` obok zastępczego cache. Rotacja zachowuje bieżący plik i dwie kopie, po około 512 KB. Odczyt jest dostępny pod przyciskiem `Diagnostyka`.
+
+Preferencja języka jest zapisywana w małym pliku `C:\MiniScreenShot\settings.json`, a przy braku dostępu w `%LOCALAPPDATA%\MiniScreenShot\settings.json`. Jest oddzielona od sprzątanego cache. Brak lub uszkodzenie ustawień przywraca język polski; błąd zapisu nie blokuje zmiany języka w bieżącej sesji. Techniczne wpisy w historycznych logach zachowują oryginalną treść.
 
 Wersja 1.1.4 otrzymała zgłoszenie Defendera `Behavior:Win32/DefenseEvasion.A!ml` podczas uruchamiania. W 1.1.5 zastosowano pakiet folderowy bez UPX i samorozpakowania przy starcie. Przyczyna zgłoszenia nie została potwierdzona przez Microsoft. Nie traktuj lokalnego skanu jako gwarancji ani nie dodawaj wyjątków antywirusa. Szczegóły i odnośnik do analizy Microsoft znajdują się w [README.md](README.md#status-zabezpieczeń).
 
@@ -91,6 +96,8 @@ Po zainstalowaniu zależności uruchom:
 ```bat
 python -m unittest test_app_storage test_preview_layout test_preview_annotations test_image_annotations test_capture_targeting test_window_catalog test_scroll_capture test_capture_scaling test_snapshot_timing test_capture_focus -v
 ```
+
+Testy języków: `python -m unittest test_localization -v`. Sprawdzają kompletność parametrów tłumaczeń i komunikatów błędów, zapis ustawień, ponowne uruchomienie po wyborze angielskiego, zmianę języka w edytorze bez utraty oznaczeń lub przycięcia, wybór okna oraz oryginał i tłumaczenie licencji. Preferencje tych testów trafiają do własnego katalogu tymczasowego, bez zmiany ustawień użytkownika.
 
 Testy cache sprawdzają limit miejsca, awaryjny katalog, usuwanie pozostałości po awarii, zachowanie aktywnych sesji i plików bez oznaczenia oraz zwalnianie plików po złożeniu zrzutu i zamknięciu obrazu. Testy interfejsu otwierają okna na pulpicie Windows i sprawdzają układ, dopasowanie obrazu, przycinanie, zapis, systemowe przyciski okna oraz przewijanie strzałkami i touchpadem w obu osiach. Test touchpada sprawdza również natywne komunikaty `WM_MOUSEWHEEL` i `WM_MOUSEHWHEEL` z niewielkimi przesunięciami; sposób kodowania precyzyjnych zdarzeń wynika z [implementacji Tk dla Windows](https://github.com/tcltk/tk/blob/core-9-0-branch/win/tkWinX.c). Podglądy z obrazem testowym zapisują się w `build\preview-review`.
 

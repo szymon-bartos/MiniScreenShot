@@ -1,4 +1,5 @@
 """Non-destructive crop selection inside the existing screenshot canvas."""
+from localization import msg
 
 
 class InlineCropEditor:
@@ -126,10 +127,10 @@ class InlineCropEditor:
     def _update_crop_hint(self, preview):
         if preview.pending_crop:
             left, top, right, bottom = self._normalize_crop_box(preview.pending_crop, *preview.display_image.size)
-            hint = f"{right - left} × {bottom - top} px\nEnter: przytnij  ·  Esc: anuluj"
+            hint = msg("{width} × {height} px\nEnter: przytnij  ·  Esc: anuluj", width=right - left, height=bottom - top)
         else:
             hint = "Zaznacz obszar na obrazie.\nEsc: anuluj"
-        preview.info_label.configure(text=hint)
+        self.ui.set(preview.info_label, text=hint)
 
     def _draw_crop_selection(self, preview):
         canvas = preview.canvas

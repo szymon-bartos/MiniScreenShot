@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from contextlib import contextmanager
 
-APP_VERSION = "1.1.7"
+APP_VERSION = "1.1.8"
 
 from tk_runtime import prepare_tk_runtime
 
@@ -31,6 +31,7 @@ from capture_progress import CaptureProgress
 from app_identity import apply_app_icon, apply_window_icon, set_process_app_id
 from app_information import InformationDialog
 from app_storage import cache_session, configure_logging
+from localization import LocalizedUI, LANGUAGES, load_language, remember_language, msg, error_message
 
 DEFAULT_CAPTURE_DIR = Path("C:/Screenshots")
 CAPTURE_DIR = DEFAULT_CAPTURE_DIR
@@ -108,11 +109,18 @@ class SelectionOverlay(tk.Toplevel):
 
 
 class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, InlineWindowPicker):
-    def __init__(self, root):
+    @property
+    def ui(self):
+        if not hasattr(self, "_ui"):
+            self._ui = LocalizedUI()
+        return self._ui
+
+    def __init__(self, root, language=None):
         self.root = root
+        self._ui = LocalizedUI(load_language() if language is None else language)
         set_process_app_id()
         self.brand_icon = apply_app_icon(root)
-        self.root.title(f"MiniScreenShot v{APP_VERSION}")
+        self.ui.title(self.root, f"MiniScreenShot v{APP_VERSION}")
         self.root.configure(bg="#0f172a")
         screen_w = self.root.winfo_screenwidth() if hasattr(self.root, "winfo_screenwidth") else 1280
         screen_h = self.root.winfo_screenheight() if hasattr(self.root, "winfo_screenheight") else 720
@@ -162,8 +170,28 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
 
         self._build_dashboard(APP_VERSION, DEFAULT_CAPTURE_DIR)
 
+    def set_language(self, language, persist=True):
+        self.ui.set_language(language)
+        self.language_var.set(LANGUAGES[language])
+        if persist and not remember_language(language):
+            self.set_status("Język zmieniono. Nie udało się zapamiętać wyboru.")
+        self._filter_window_list()
+        self._layout_footer_links()
+        self.dashboard_layout = None
+        self._update_responsive_layout()
+        for window in self.root.winfo_children():
+            if hasattr(window, "display_image"):
+                self._localize_annotation_choices(window)
+                self._schedule_preview_layout(window)
+            if isinstance(window, InformationDialog):
+                window.update_license()
+
+    def _language_selected(self, event=None):
+        language = next(code for code, label in LANGUAGES.items() if label == self.language_var.get())
+        self.set_language(language)
+
     def choose_folder(self):
-        folder = filedialog.askdirectory(title="Wybierz katalog zapisu")
+        folder = filedialog.askdirectory(title=self.ui.render("Wybierz katalog zapisu"))
         if folder:
             self.output_dir.set(folder)
             global CAPTURE_DIR
@@ -171,7 +199,7 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             CAPTURE_DIR.mkdir(exist_ok=True)
 
     def set_status(self, message: str):
-        self.status.config(text=message)
+        self.ui.set(self.status, text=message)
 
     def _add_debug_log(self, message: str):
         if not hasattr(self, "_debug_lines"):
@@ -186,7 +214,7 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
     def show_debug_log(self):
         dialog = tk.Toplevel(self.root)
         apply_window_icon(dialog)
-        dialog.title("Diagnostyka i logi")
+        self.ui.title(dialog, "Diagnostyka i logi")
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.geometry("700x420")
@@ -201,15 +229,18 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             content = ""
 
         if not content:
-            content = "\n".join(self._debug_lines) if self._debug_lines else "Brak logów."
+            content = "\n".join(self._debug_lines)
 
-        text.insert("1.0", content)
+        if content:
+            text.insert("1.0", content)
+        else:
+            self.ui.body(text, "Brak logów.")
         text.config(state="disabled")
 
         buttons = ttk.Frame(dialog)
         buttons.pack(fill="x", padx=12, pady=(0, 12))
-        ttk.Button(buttons, text="Kopiuj", command=lambda: self._copy_debug_text(dialog, text)).pack(side="right")
-        ttk.Button(buttons, text="Zamknij", command=dialog.destroy).pack(side="right", padx=(0, 8))
+        self.ui.widget(ttk.Button, buttons, text="Kopiuj", command=lambda: self._copy_debug_text(dialog, text)).pack(side="right")
+        self.ui.widget(ttk.Button, buttons, text="Zamknij", command=dialog.destroy).pack(side="right", padx=(0, 8))
 
     def show_information(self):
         dialog = getattr(self, "information_window", None)
@@ -218,7 +249,7 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             dialog.lift()
             dialog.focus_set()
         else:
-            self.information_window = InformationDialog(self.root, APP_VERSION, self.brand_icon)
+            self.information_window = InformationDialog(self.root, APP_VERSION, self.brand_icon, ui=self.ui)
         return self.information_window
 
     def _copy_debug_text(self, dialog, text_widget):
@@ -230,7 +261,7 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             self.root.update()
             self.set_status("Log skopiowany do schowka.")
         except Exception as exc:
-            self.set_status(f"Błąd kopiowania logu: {exc}")
+            self.set_status(msg("Błąd kopiowania logu: {error}", error=error_message(exc)))
         finally:
             text_widget.configure(state="disabled")
             dialog.destroy()
@@ -247,18 +278,18 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             message = "Zaznacz fragment ekranu myszą. Esc anuluje zaznaczanie."
         else:
             return
-        messagebox.showinfo(
+        self.ui.dialog(messagebox.showinfo,
             "Zrzut ekranu",
             message,
             parent=self.root,
         )
 
-    def _show_preview(self, image: Image.Image, prefix: str, title: str = "Podgląd zrzutu"):
+    def _show_preview(self, image: Image.Image, prefix: str, title: str = msg("Podgląd zrzutu")):
         preview = tk.Toplevel(self.root)
         preview.withdraw()
         apply_window_icon(preview)
         # A regular window keeps the native minimize, maximize and close buttons.
-        preview.title(f"{title} — MiniScreenShot")
+        self.ui.title(preview, msg("{title} — MiniScreenShot", title=title))
         preview.configure(bg=BACKGROUND)
         preview.protocol("WM_DELETE_WINDOW", lambda: self._discard_preview(preview, getattr(preview, "display_image", image)))
 
@@ -292,17 +323,17 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
         preview.header = header
         header.grid(row=0, column=0, sticky="ew")
         header.columnconfigure(0, weight=1)
-        preview.brand = tk.Label(header, text="  MiniScreenShot", image=self.brand_icon, compound="left",
+        preview.brand = self.ui.widget(tk.Label, header, text="  MiniScreenShot", image=self.brand_icon, compound="left",
                                  bg=BACKGROUND, fg="#a5b4fc", font=("Segoe UI", 9, "bold"), anchor="w")
         preview.brand.grid(row=0, column=0, sticky="w")
         preview.pin_group = tk.Frame(header, bg=SURFACE, padx=8)
         preview.pin_group.grid(row=0, column=1, sticky="e")
-        tk.Label(preview.pin_group, text="Na wierzchu", bg=SURFACE, fg=MUTED, font=("Segoe UI", 9)).pack(side="left", padx=(0, 6))
+        self.ui.widget(tk.Label, preview.pin_group, text="Na wierzchu", bg=SURFACE, fg=MUTED, font=("Segoe UI", 9)).pack(side="left", padx=(0, 6))
         preview.pin_switch = ToggleSwitch(preview.pin_group, preview.pin_var)
         preview.pin_switch.pack(side="left")
-        preview.heading = tk.Label(header, text="Zrzut gotowy", bg=BACKGROUND, fg=TEXT, font=("Segoe UI", 18, "bold"), anchor="w")
+        preview.heading = self.ui.widget(tk.Label, header, text="Zrzut gotowy", bg=BACKGROUND, fg=TEXT, font=("Segoe UI", 18, "bold"), anchor="w")
         preview.heading.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(8, 0))
-        preview.source_label = tk.Label(header, text=title[:120] + ("…" if len(title) > 120 else ""), bg=BACKGROUND, fg=MUTED,
+        preview.source_label = self.ui.widget(tk.Label, header, text=msg("{title}", title=title).clipped(120), bg=BACKGROUND, fg=MUTED,
                                         font=("Segoe UI", 9), anchor="w", justify="left", wraplength=width - 40)
         preview.source_label.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(2, 0))
 
@@ -320,34 +351,34 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
         preview.toolbar.columnconfigure(0, weight=1)
         self._build_annotation_controls(preview, drawing, brush_color, brush_size)
 
-        preview.save_btn = RoundedButton(actions, text="Zapisz", command=lambda: self._confirm_save(preview, preview.display_image, prefix), primary=True, compact=True)
+        preview.save_btn = self.ui.widget(RoundedButton, actions, text="Zapisz", command=lambda: self._confirm_save(preview, preview.display_image, prefix), primary=True, compact=True)
         preview.save_btn.pack(side="left", padx=(0, 6))
-        preview.copy_btn = RoundedButton(actions, text="Kopiuj", command=lambda: self._copy_image_to_clipboard(preview, preview.display_image), compact=True)
+        preview.copy_btn = self.ui.widget(RoundedButton, actions, text="Kopiuj", command=lambda: self._copy_image_to_clipboard(preview, preview.display_image), compact=True)
         preview.copy_btn.pack(side="left")
 
-        preview.crop_btn = RoundedButton(edits, text="Przytnij", command=lambda: self._toggle_crop_mode(preview, preview.display_image), compact=True)
+        preview.crop_btn = self.ui.widget(RoundedButton, edits, text="Przytnij", command=lambda: self._toggle_crop_mode(preview, preview.display_image), compact=True)
         preview.crop_btn.grid(row=0, column=0)
-        preview.accept_btn = RoundedButton(edits, text="Zatwierdź", command=lambda: self._accept_crop(preview), primary=True, compact=True)
+        preview.accept_btn = self.ui.widget(RoundedButton, edits, text="Zatwierdź", command=lambda: self._accept_crop(preview), primary=True, compact=True)
         preview.accept_btn.grid(row=0, column=1, padx=(6, 0))
         preview.accept_btn.grid_remove()
-        preview.reject_btn = RoundedButton(edits, text="Anuluj", command=lambda: self._reject_crop(preview), compact=True)
+        preview.reject_btn = self.ui.widget(RoundedButton, edits, text="Anuluj", command=lambda: self._reject_crop(preview), compact=True)
         preview.reject_btn.grid(row=0, column=2, padx=(6, 0))
         preview.reject_btn.grid_remove()
 
-        preview.zoom_out = RoundedButton(zoom, text="−", command=lambda: self._set_preview_zoom(preview, -1), compact=True)
+        preview.zoom_out = self.ui.widget(RoundedButton, zoom, text="−", command=lambda: self._set_preview_zoom(preview, -1), compact=True)
         preview.zoom_out.grid(row=0, column=0)
         preview.zoom_var = tk.DoubleVar(preview, value=100)
         preview.zoom_slider = RangeSlider(zoom, variable=preview.zoom_var,
                                           command=lambda value: self._apply_zoom_from_slider(preview, preview.display_image, float(value)))
         preview.zoom_slider.grid(row=0, column=1, sticky="ew", padx=8)
         zoom.columnconfigure(1, weight=1)
-        preview.zoom_in = RoundedButton(zoom, text="+", command=lambda: self._set_preview_zoom(preview, 1), compact=True)
+        preview.zoom_in = self.ui.widget(RoundedButton, zoom, text="+", command=lambda: self._set_preview_zoom(preview, 1), compact=True)
         preview.zoom_in.grid(row=0, column=2)
-        preview.zoom_label = tk.Label(zoom, text="100%", width=5, anchor="e", bg=BACKGROUND, fg=MUTED, font=("Segoe UI", 9))
+        preview.zoom_label = self.ui.widget(tk.Label, zoom, text="100%", width=5, anchor="e", bg=BACKGROUND, fg=MUTED, font=("Segoe UI", 9))
         preview.zoom_label.grid(row=0, column=3, padx=(6, 0))
-        preview.fit_btn = RoundedButton(views, text="Dopasuj", command=lambda: self._fit_preview_image(preview), primary=True, compact=True)
+        preview.fit_btn = self.ui.widget(RoundedButton, views, text="Dopasuj", command=lambda: self._fit_preview_image(preview), primary=True, compact=True)
         preview.fit_btn.pack(side="left", padx=(0, 6))
-        preview.actual_size_btn = RoundedButton(views, text="100%", command=lambda: self._apply_zoom_from_slider(preview, preview.display_image, 100), compact=True)
+        preview.actual_size_btn = self.ui.widget(RoundedButton, views, text="100%", command=lambda: self._apply_zoom_from_slider(preview, preview.display_image, 100), compact=True)
         preview.actual_size_btn.pack(side="left")
 
         ttk.Separator(preview).grid(row=2, column=0, sticky="ew")
@@ -395,7 +426,7 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
         preview.footer = footer
         footer.grid(row=4, column=0, sticky="ew")
         footer.columnconfigure(0, weight=1)
-        preview.info_label = tk.Label(footer, bg=BACKGROUND, fg=MUTED, font=("Segoe UI", 9), anchor="w", justify="left", wraplength=width - 40)
+        preview.info_label = self.ui.widget(tk.Label, footer, bg=BACKGROUND, fg=MUTED, font=("Segoe UI", 9), anchor="w", justify="left", wraplength=width - 40)
         preview.info_label.grid(row=0, column=0, sticky="ew")
 
         preview.toolbar.bind("<Configure>", lambda event: self._schedule_preview_layout(preview))
@@ -414,6 +445,7 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
         preview.attributes("-topmost", True)
         preview.lift()
         preview.focus_job = preview.after_idle(lambda: self._activate_preview(preview))
+        self._localize_annotation_choices(preview)
         return preview
 
     def _activate_preview(self, preview):
@@ -519,17 +551,18 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             )
         preview.zoom_percent = canvas.zoom_factor * 100
         preview.zoom_var.set(max(1, preview.zoom_percent))
-        preview.zoom_label.configure(text=f"{preview.zoom_percent:.0f}%" if preview.zoom_percent >= 1 else "<1%")
+        self.ui.set(preview.zoom_label, text=f"{preview.zoom_percent:.0f}%" if preview.zoom_percent >= 1 else "<1%")
         preview.fit_btn.configure(primary=preview.fit_to_window)
         mode = "Dopasowanie do okna · Ctrl + kółko: powiększenie" if preview.fit_to_window else "Strzałki / dwa palce: przewijanie · Ctrl + kółko: powiększenie"
         if preview.pending_crop:
             mode = "Zatwierdź przycięcie lub kliknij Anuluj"
         elif preview.annotation_tool:
             tool = "Mazak" if preview.annotation_tool == "highlighter" else "Ołówek"
-            mode = f"{tool}: rysuj na obrazie · Esc: zakończ · Ctrl+Z: cofnij"
+            mode = msg("{tool}: rysuj na obrazie · Esc: zakończ · Ctrl+Z: cofnij", tool=msg(tool))
         scaled = image.info.get("capture_scale")
-        resolution = f"  ·  Automatycznie zmniejszono do {scaled:.0%}" if scaled else ""
-        preview.info_label.configure(text=f"{image.width} × {image.height} px{resolution}  ·  {mode}")
+        resolution = msg("  ·  Automatycznie zmniejszono do {scale:.0%}", scale=scaled) if scaled else ""
+        self.ui.set(preview.info_label, text=msg("{width} × {height} px{resolution}  ·  {mode}", width=image.width, height=image.height,
+                                               resolution=resolution, mode=msg(mode)))
         if preview.crop_active:
             self._update_crop_hint(preview)
         self._render_image_on_canvas(canvas, image, canvas.zoom_factor)
@@ -681,7 +714,7 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             path = save_image(image, "clipboard_copy")
             self.root.clipboard_clear()
             self.root.clipboard_append(path)
-            self.set_status(f"Zrzut zapisany do pliku i ścieżka skopiowana: {path}")
+            self.set_status(msg("Zrzut zapisany do pliku i ścieżka skopiowana: {path}", path=path))
             preview.destroy()
 
     def _confirm_save(self, preview, image, prefix):
@@ -689,9 +722,9 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
         try:
             path = save_image(image, prefix)
             preview.destroy()
-            self.set_status(f"Zapisano: {path}")
+            self.set_status(msg("Zapisano: {path}", path=path))
         except Exception as exc:
-            messagebox.showerror("Błąd", str(exc))
+            self.ui.dialog(messagebox.showerror, "Błąd", error_message(exc))
             self.set_status("Nie udało się zapisać zrzutu.")
 
     def _discard_preview(self, preview, image):
@@ -707,9 +740,9 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             with self._hidden_capture_windows():
                 time.sleep(0.15)
                 img = ImageGrab.grab()
-            self._capture_to_preview(img, "full_screen", "Pełny ekran - podgląd")
+            self._capture_to_preview(img, "full_screen", msg("Pełny ekran - podgląd"))
         except Exception as exc:
-            messagebox.showerror("Błąd", str(exc))
+            self.ui.dialog(messagebox.showerror, "Błąd", error_message(exc))
             self.set_status("Błąd zrzutu całego ekranu.")
 
     def _window_bbox(self, window):
@@ -807,10 +840,10 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             windows = self.get_selectable_windows()
             titles = [getattr(w, "title", "<unknown>") for w in windows]
             self._add_debug_log(f"Refresh window list: {titles}")
-            self.set_status(f"Wczytano okien: {len(windows)}")
+            self.set_status(msg("Wczytano okien: {count}", count=len(windows)))
         except Exception as exc:
             self._add_debug_log(f"Refresh window list failed: {exc}")
-            self.set_status(f"Błąd odświeżania listy okien: {exc}")
+            self.set_status(msg("Błąd odświeżania listy okien: {error}", error=error_message(exc)))
 
     def _capture_window_obj(self, window):
         self._show_capture_warning()
@@ -825,10 +858,10 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
                 if bbox is None:
                     raise ValueError("Wybrane okno nie ma prawidłowych wymiarów.")
                 img = ImageGrab.grab(bbox=bbox)
-            self._capture_to_preview(img, "selected_window", f"Okno: {window.title} - podgląd")
+            self._capture_to_preview(img, "selected_window", msg("Okno: {title} - podgląd", title=window.title))
         except Exception as exc:
-            messagebox.showerror("Błąd", str(exc))
-            self._report_capture_failure(f"Nie udało się wykonać zrzutu okna: {exc}")
+            self.ui.dialog(messagebox.showerror, "Błąd", error_message(exc))
+            self._report_capture_failure(msg("Nie udało się wykonać zrzutu okna: {error}", error=msg(error_message(exc))))
 
     def _hide_capture_windows(self):
         states = []
@@ -857,7 +890,7 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             self._restore_capture_windows(states)
 
     def _scroll_progress(self, message):
-        self.set_status(message + "  Esc: anuluj")
+        self.set_status(msg("{message}  Esc: anuluj", message=msg(message)))
         if getattr(self, "capture_progress", None):
             self.capture_progress.set_message(message)
         self._add_debug_log(message)
@@ -867,7 +900,7 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
     def _report_capture_failure(self, message):
         self.set_status("Nie wykonano zrzutu.")
         if hasattr(self, "capture_notice"):
-            self.capture_notice.configure(text=message)
+            self.ui.set(self.capture_notice, text=message)
             self.capture_notice.grid()
             self.root.lift()
 
@@ -880,7 +913,7 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
                 driver = WindowsScrollDriver(window)
                 try:
                     if hasattr(self.root, "winfo_children"):
-                        self.capture_progress = CaptureProgress(self.root, driver.bbox)
+                        self.capture_progress = CaptureProgress(self.root, driver.bbox, ui=self.ui)
                         driver.pulse = self.capture_progress.pump
                         driver.frame_guard = self.capture_progress.capture_frame
                     engine = ScrollingCapture(driver, vertical=self.vertical_var.get(), horizontal=self.horizontal_var.get(),
@@ -895,14 +928,14 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             reason = reason if isinstance(reason, str) else None
             no_movement = not reason and getattr(engine, "frame_count", None) == 1
             description = "zrzut częściowy" if reason else ("widoczny obszar" if no_movement else "z przewijaniem")
-            preview = self._capture_to_preview(image, "selected_window_scroll", f"Okno: {window.title} — {description}")
+            preview = self._capture_to_preview(image, "selected_window_scroll", msg("Okno: {title} — {description}", title=window.title, description=msg(description)))
             if reason:
-                preview.heading.configure(text="Zrzut częściowy", fg="#fbbf24")
-                preview.source_label.configure(text=reason)
-                self.set_status("Zachowano zrzut częściowy. " + reason)
+                self.ui.set(preview.heading, text="Zrzut częściowy", fg="#fbbf24")
+                self.ui.set(preview.source_label, text=reason)
+                self.set_status(msg("Zachowano zrzut częściowy. {reason}", reason=msg(reason)))
             elif no_movement:
-                preview.heading.configure(text="Widoczny obszar", fg="#fbbf24")
-                preview.source_label.configure(text="Nie wykryto przesunięcia zawartości. Przechwycono tylko widoczny obszar.")
+                self.ui.set(preview.heading, text="Widoczny obszar", fg="#fbbf24")
+                self.ui.set(preview.source_label, text="Nie wykryto przesunięcia zawartości. Przechwycono tylko widoczny obszar.")
                 self.set_status("Przechwycono widoczny obszar — nie wykryto przewijania.")
             else:
                 self.set_status("Zrzut gotowy. Możliwe niewielkie zakładki." if engine.approximate is True else "Zrzut gotowy. Otworzono podgląd.")
@@ -911,7 +944,7 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             self._report_capture_failure(str(exc))
         except Exception as exc:
             logger.exception("Scrolling capture failed")
-            self._report_capture_failure(f"Nie udało się wykonać zrzutu z przewijaniem: {exc}")
+            self._report_capture_failure(msg("Nie udało się wykonać zrzutu z przewijaniem: {error}", error=msg(error_message(exc))))
 
     def capture_selected_area(self):
         self._show_capture_warning()
@@ -931,10 +964,10 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             img = ImageGrab.grab(bbox=(x1, y1, x2, y2))
             self._restore_capture_windows(getattr(self, "_area_window_states", []))
             self._area_window_states = []
-            self._capture_to_preview(img, "selected_area", "Zaznaczony wycinek - podgląd")
+            self._capture_to_preview(img, "selected_area", msg("Zaznaczony wycinek - podgląd"))
         except Exception as exc:
             self._cancel_area_selection()
-            messagebox.showerror("Błąd", str(exc))
+            self.ui.dialog(messagebox.showerror, "Błąd", error_message(exc))
             self.set_status("Błąd zrzutu obszaru.")
 
 def main():

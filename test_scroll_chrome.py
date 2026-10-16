@@ -77,7 +77,7 @@ class ChromeErpCaptureTests(unittest.TestCase):
             self.assertTrue(handle, "Isolated Chrome fixture did not load")
             window = gw.Win32Window(handle)
             root = tk.Tk()
-            app = ScreenCaptureApp(root)
+            app = ScreenCaptureApp(root, language="en")
             root.update()
             with app._hidden_capture_windows():
                 pyautogui.click(*win32gui.ClientToScreen(handle, (700, 12)))
@@ -92,10 +92,11 @@ class ChromeErpCaptureTests(unittest.TestCase):
                             time.sleep(0.05)
                         self.assertIn("delay=450", window.title)
                     driver = WindowsScrollDriver(window)
-                    loader = CaptureProgress(root, driver.bbox)
+                    loader = CaptureProgress(root, driver.bbox, ui=app.ui)
                     driver.pulse, driver.frame_guard = loader.pump, loader.capture_frame
                     engine = ScrollingCapture(driver, progress=loader.set_message, include_window_frame=True)
                     result = engine.capture()
+                    self.assertTrue(loader.phase.cget("text").startswith("Finishing "), "Progress panel was not translated")
                     result.save(folder / ("delayed.png" if delayed else "instant.png"))
                     self.assertIsNone(engine.incomplete_reason)
                     self.assertGreater(engine.frame_count, 1, "Moving lead rows were classified as stationary")

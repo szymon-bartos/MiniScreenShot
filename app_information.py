@@ -5,17 +5,24 @@ from tkinter import ttk
 
 from app_identity import apply_window_icon
 from ui_widgets import BACKGROUND, SURFACE, TEXT, MUTED, RoundedButton
+from localization import LocalizedUI, msg
 
 
 AUTHOR_NOTE = "Stworzone przez Szymona Bartosa"
 LICENSE_TEXT = (Path(__file__).resolve().parent / "LICENSE.txt").read_text(encoding="utf-8").strip()
+ENGLISH_LICENSE_TEXT = (
+    "The author grants the user a free, non-exclusive licence to use the program for private and commercial purposes. "
+    "Modifying, decompiling or reverse engineering the program's code, selling the program, or deriving direct profit "
+    "from its distribution without the author's consent is prohibited."
+)
 
 
 class InformationDialog(tk.Toplevel):
-    def __init__(self, parent, version, brand_icon):
+    def __init__(self, parent, version, brand_icon, ui=None):
         super().__init__(parent)
+        self.ui = ui if ui is not None else LocalizedUI()
         self.withdraw()
-        self.title("Informacje — MiniScreenShot")
+        self.ui.title(self, "Informacje — MiniScreenShot")
         apply_window_icon(self)
         self.configure(bg=BACKGROUND)
         self.transient(parent)
@@ -32,14 +39,14 @@ class InformationDialog(tk.Toplevel):
         header = tk.Frame(self, bg=BACKGROUND, padx=px(22), pady=px(18))
         header.grid(row=0, column=0, sticky="ew")
         header.columnconfigure(0, weight=1)
-        tk.Label(header, text="  MiniScreenShot", image=brand_icon, compound="left",
+        self.ui.widget(tk.Label, header, text="  MiniScreenShot", image=brand_icon, compound="left",
                  bg=BACKGROUND, fg=TEXT, font=("Segoe UI", 18, "bold"), anchor="w").grid(row=0, column=0, sticky="ew")
-        tk.Label(header, text=f"Wersja {version}", bg=BACKGROUND, fg=MUTED,
+        self.ui.widget(tk.Label, header, text=msg("Wersja {version}", version=version), bg=BACKGROUND, fg=MUTED,
                  font=("Segoe UI", 9), anchor="w").grid(row=1, column=0, sticky="ew", pady=(px(4), px(12)))
-        self.author_label = tk.Label(header, text=AUTHOR_NOTE, bg=BACKGROUND, fg="#a5b4fc",
+        self.author_label = self.ui.widget(tk.Label, header, text=AUTHOR_NOTE, bg=BACKGROUND, fg="#a5b4fc",
                                      font=("Segoe UI", 11), anchor="w", justify="left")
         self.author_label.grid(row=2, column=0, sticky="ew")
-        tk.Label(self, text="Warunki licencji", bg=BACKGROUND, fg=TEXT,
+        self.ui.widget(tk.Label, self, text="Warunki licencji", bg=BACKGROUND, fg=TEXT,
                  font=("Segoe UI", 11, "bold"), anchor="w").grid(row=1, column=0, sticky="ew", padx=px(22), pady=(0, px(8)))
 
         content = tk.Frame(self, bg=SURFACE)
@@ -55,12 +62,11 @@ class InformationDialog(tk.Toplevel):
                                 style="Preview.Vertical.TScrollbar")
         scroll.grid(row=0, column=1, sticky="ns")
         self.license_text.configure(yscrollcommand=scroll.set)
-        self.license_text.insert("1.0", LICENSE_TEXT)
-        self.license_text.configure(state="disabled")
+        self.update_license()
 
         footer = tk.Frame(self, bg=BACKGROUND, padx=px(22), pady=px(16))
         footer.grid(row=3, column=0, sticky="ew")
-        self.close_button = RoundedButton(footer, "Zamknij", self.destroy, primary=True, compact=True)
+        self.close_button = self.ui.widget(RoundedButton, footer, "Zamknij", self.destroy, primary=True, compact=True)
         self.close_button.pack(side="right")
         self.bind("<Escape>", lambda event: self.destroy())
         self.bind("<Configure>", lambda event: self.author_label.configure(wraplength=max(100, event.width - px(44)))
@@ -73,3 +79,11 @@ class InformationDialog(tk.Toplevel):
         self.deiconify()
         self.lift()
         self.close_button.focus_set()
+
+    def update_license(self):
+        content = (ENGLISH_LICENSE_TEXT + "\n\nOriginal Polish licence\n\n" + LICENSE_TEXT
+                   if self.ui.language == "en" else LICENSE_TEXT)
+        self.license_text.configure(state="normal")
+        self.license_text.delete("1.0", "end")
+        self.license_text.insert("1.0", content)
+        self.license_text.configure(state="disabled")

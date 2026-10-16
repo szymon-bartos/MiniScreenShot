@@ -70,7 +70,7 @@ class ExcelScrollTests(unittest.TestCase):
         root = tk.Tk()
         driver = None
         try:
-            app = ScreenCaptureApp(root)
+            app = ScreenCaptureApp(root, language="pl")
             root.update()
             with app._hidden_capture_windows():
                 window = gw.Win32Window(self.handle)

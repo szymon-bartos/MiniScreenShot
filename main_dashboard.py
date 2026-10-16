@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from ui_widgets import BACKGROUND, SURFACE, TEXT, MUTED, ModeCard, RoundedButton, ToggleSwitch
+from localization import LANGUAGES
 
 
 class MainDashboard:
@@ -23,19 +24,30 @@ class MainDashboard:
         header = tk.Frame(self.root, bg=BACKGROUND, padx=px(28), pady=px(20))
         header.grid(row=0, column=0, sticky="ew")
         header.columnconfigure(0, weight=1)
-        tk.Label(header, text="  MiniScreenShot", image=self.brand_icon, compound="left", bg=BACKGROUND, fg="#a5b4fc",
+        self.ui.widget(tk.Label, header, text="  MiniScreenShot", image=self.brand_icon, compound="left", bg=BACKGROUND, fg="#a5b4fc",
                  font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="w")
-        tk.Label(header, text=f"v{version}", bg=SURFACE, fg=MUTED,
+        self.ui.widget(tk.Label, header, text=f"v{version}", bg=SURFACE, fg=MUTED,
                  padx=px(10), pady=px(4), font=("Segoe UI", 9)).grid(row=0, column=1, sticky="e")
-        tk.Label(header, text="Nowy zrzut ekranu", bg=BACKGROUND, fg=TEXT,
+        self.ui.widget(tk.Label, header, text="Nowy zrzut ekranu", bg=BACKGROUND, fg=TEXT,
                  font=("Segoe UI", 22, "bold")).grid(row=1, column=0, columnspan=2, sticky="w", pady=(px(12), px(4)))
-        self.intro_label = tk.Label(header, text="Wybierz, co chcesz uchwycić. Dopracuj obraz w podglądzie.",
+        self.intro_label = self.ui.widget(tk.Label, header, text="Wybierz, co chcesz uchwycić. Dopracuj obraz w podglądzie.",
                                     bg=BACKGROUND, fg=MUTED, justify="left", anchor="w", font=("Segoe UI", 10))
         self.intro_label.grid(row=2, column=0, columnspan=2, sticky="ew")
-        self.capture_notice = tk.Label(header, bg="#341c2d", fg="#fecdd3", padx=px(14), pady=px(10),
+        self.capture_notice = self.ui.widget(tk.Label, header, bg="#341c2d", fg="#fecdd3", padx=px(14), pady=px(10),
                                        justify="left", anchor="w", font=("Segoe UI", 10))
         self.capture_notice.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(px(12), 0))
         self.capture_notice.grid_remove()
+
+        languages = tk.Frame(header, bg=BACKGROUND)
+        languages.grid(row=4, column=0, columnspan=2, sticky="w", pady=(px(12), 0))
+        self.ui.widget(tk.Label, languages, text="Język", bg=BACKGROUND, fg=MUTED,
+                       font=("Segoe UI", 9)).pack(side="left", padx=(0, px(10)))
+        self.language_var = tk.StringVar(self.root, value=LANGUAGES[self.ui.language])
+        self.language_picker = ttk.Combobox(languages, textvariable=self.language_var,
+                                            values=tuple(LANGUAGES.values()), state="readonly", width=10,
+                                            style="Annotation.TCombobox", font=("Segoe UI", 9))
+        self.language_picker.pack(side="left")
+        self.language_picker.bind("<<ComboboxSelected>>", self._language_selected)
 
         host = tk.Frame(self.root, bg=BACKGROUND)
         host.grid(row=1, column=0, sticky="nsew", padx=px(24))
@@ -51,11 +63,11 @@ class MainDashboard:
         self.dashboard_body.columnconfigure(0, weight=1)
         self.dashboard_window = self.dashboard_canvas.create_window(0, 0, window=self.dashboard_body, anchor="nw")
 
-        tk.Label(self.dashboard_body, text="TRYB ZRZUTU", bg=BACKGROUND, fg=MUTED,
+        self.ui.widget(tk.Label, self.dashboard_body, text="TRYB ZRZUTU", bg=BACKGROUND, fg=MUTED,
                  font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky="w", pady=(0, px(10)))
         self.mode_grid = tk.Frame(self.dashboard_body, bg=BACKGROUND)
         self.mode_grid.grid(row=1, column=0, sticky="ew")
-        self.mode_cards = [ModeCard(self.mode_grid, key, title, subtitle, self._select_capture_mode)
+        self.mode_cards = [self.ui.widget(ModeCard, self.mode_grid, key, title, subtitle, self._select_capture_mode)
                            for key, title, subtitle in (
                                ("screen", "Cały ekran", "Wszystko, co widzisz"),
                                ("window", "Okno aplikacji", "Także z przewijaniem"),
@@ -67,9 +79,9 @@ class MainDashboard:
                                highlightthickness=1, highlightbackground="#25324a")
         scroll_card.grid(row=3, column=0, sticky="ew", pady=(px(18), 0))
         scroll_card.columnconfigure(0, weight=1)
-        tk.Label(scroll_card, text="Przewijanie okna", bg=SURFACE, fg=TEXT,
+        self.ui.widget(tk.Label, scroll_card, text="Przewijanie okna", bg=SURFACE, fg=TEXT,
                  font=("Segoe UI", 11, "bold")).grid(row=0, column=0, sticky="w")
-        self.scroll_hint = tk.Label(scroll_card, bg=SURFACE, fg=MUTED, justify="left", anchor="w", font=("Segoe UI", 9))
+        self.scroll_hint = self.ui.widget(tk.Label, scroll_card, bg=SURFACE, fg=MUTED, justify="left", anchor="w", font=("Segoe UI", 9))
         self.scroll_hint.grid(row=1, column=0, sticky="ew", pady=(px(4), px(10)))
         self.scroll_options = tk.Frame(scroll_card, bg=SURFACE)
         self.scroll_options.grid(row=2, column=0, sticky="ew")
@@ -80,9 +92,9 @@ class MainDashboard:
                                          (self.horizontal_var, "W poziomie", "Lewo i prawo")):
             row = tk.Frame(self.scroll_options, bg=SURFACE)
             row.columnconfigure(0, weight=1)
-            label = tk.Label(row, text=title, bg=SURFACE, fg=TEXT, font=("Segoe UI", 10, "bold"), anchor="w")
+            label = self.ui.widget(tk.Label, row, text=title, bg=SURFACE, fg=TEXT, font=("Segoe UI", 10, "bold"), anchor="w")
             label.grid(row=0, column=0, sticky="ew")
-            detail_label = tk.Label(row, text=detail, bg=SURFACE, fg=MUTED, font=("Segoe UI", 9), anchor="w")
+            detail_label = self.ui.widget(tk.Label, row, text=detail, bg=SURFACE, fg=MUTED, font=("Segoe UI", 9), anchor="w")
             detail_label.grid(row=1, column=0, sticky="ew")
             switch = ToggleSwitch(row, variable)
             switch.grid(row=0, column=1, rowspan=2, padx=(px(12), 0))
@@ -96,28 +108,28 @@ class MainDashboard:
                                highlightthickness=1, highlightbackground="#25324a")
         output_card.grid(row=4, column=0, sticky="ew", pady=(px(14), px(12)))
         output_card.columnconfigure(0, weight=1)
-        tk.Label(output_card, text="Folder zapisu", bg=SURFACE, fg=TEXT,
+        self.ui.widget(tk.Label, output_card, text="Folder zapisu", bg=SURFACE, fg=TEXT,
                  font=("Segoe UI", 11, "bold")).grid(row=0, column=0, sticky="w")
         self.output_entry = tk.Entry(output_card, textvariable=self.output_dir, state="readonly",
                                      readonlybackground=SURFACE, fg=MUTED, bd=0, highlightthickness=0,
                                      font=("Segoe UI", 9), selectbackground="#4f46e5")
         self.output_entry.grid(row=1, column=0, sticky="ew", pady=(px(8), 0))
-        self.folder_button = RoundedButton(output_card, "Zmień folder", self.choose_folder, background=SURFACE)
+        self.folder_button = self.ui.widget(RoundedButton, output_card, "Zmień folder", self.choose_folder, background=SURFACE)
         self.folder_button.grid(row=0, column=1, rowspan=2, padx=(px(16), 0))
 
         footer = tk.Frame(self.root, bg=BACKGROUND, padx=px(28), pady=px(16))
         footer.grid(row=2, column=0, sticky="ew")
         footer.columnconfigure(0, weight=1)
-        self.status = tk.Label(footer, text="Gotowy do zrzutu", bg=BACKGROUND, fg="#a5b4fc",
+        self.status = self.ui.widget(tk.Label, footer, text="Gotowy do zrzutu", bg=BACKGROUND, fg="#a5b4fc",
                                justify="left", anchor="w", font=("Segoe UI", 9))
         self.status.grid(row=0, column=0, sticky="ew", padx=(0, px(16)))
-        self.capture_action = RoundedButton(footer, "Zrób zrzut ekranu", self._capture_selected_mode, primary=True)
+        self.capture_action = self.ui.widget(RoundedButton, footer, "Zrób zrzut ekranu", self._capture_selected_mode, primary=True)
         self.capture_action.grid(row=0, column=1, sticky="ew")
         links = tk.Frame(footer, bg=BACKGROUND)
         links.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(px(12), 0))
         self.footer_buttons = []
         for text, command in (("Diagnostyka", self.show_debug_log), ("Informacje", self.show_information)):
-            button = tk.Button(links, text=text, command=command, bg=BACKGROUND, fg=MUTED, activebackground=BACKGROUND,
+            button = self.ui.widget(tk.Button, links, text=text, command=command, bg=BACKGROUND, fg=MUTED, activebackground=BACKGROUND,
                                 activeforeground=TEXT, bd=0, padx=0, cursor="hand2", font=("Segoe UI", 9),
                                 highlightbackground=BACKGROUND)
             self.footer_buttons.append(button)
@@ -156,7 +168,7 @@ class MainDashboard:
         for switch, label in zip(self.scroll_switches, self.option_labels):
             switch.configure(state="normal" if mode == "window" else "disabled")
             label.configure(fg=TEXT if mode == "window" else MUTED)
-        self.capture_action.configure(text={"screen": "Zrób zrzut ekranu", "window": "Zrób zrzut okna", "area": "Zaznacz obszar"}[mode], state="normal")
+        self.ui.set(self.capture_action, text={"screen": "Zrób zrzut ekranu", "window": "Zrób zrzut okna", "area": "Zaznacz obszar"}[mode], state="normal")
         self._update_capture_options()
         if mode == "window":
             self._show_window_picker()
@@ -165,12 +177,12 @@ class MainDashboard:
 
     def _update_capture_options(self):
         if self.selected_mode != "window":
-            self.scroll_hint.configure(text="Dostępne w trybie „Okno aplikacji”.")
+            self.ui.set(self.scroll_hint, text="Dostępne w trybie „Okno aplikacji”.")
             return
         scrolling = self.vertical_var.get() or self.horizontal_var.get()
-        self.scroll_hint.configure(text="Przewijanie i łączenie obrazu w jednym przejściu. Esc przerywa."
+        self.ui.set(self.scroll_hint, text="Przewijanie i łączenie obrazu w jednym przejściu. Esc przerywa."
                                    if scrolling else "Zwykły zrzut widocznego okna. Włącz kierunek, aby uchwycić więcej.")
-        self.capture_action.configure(text="Zrób zrzut z przewijaniem" if scrolling else "Zrób zrzut okna")
+        self.ui.set(self.capture_action, text="Zrób zrzut z przewijaniem" if scrolling else "Zrób zrzut okna")
 
     def _capture_selected_mode(self):
         actions = {"screen": self.capture_full_screen, "window": self._capture_selected_window,

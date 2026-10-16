@@ -21,11 +21,11 @@ class PreviewAnnotations:
         preview.annotation_job = None
         preview.annotation_history = AnnotationHistory()
         preview.brush_settings = {"pencil": ("Czerwony", "Średnia"), "highlighter": ("Żółty", "Średnia")}
-        preview.pen_btn = RoundedButton(tools, "Ołówek", lambda: self._set_annotation_tool(preview, "pencil"), compact=True)
+        preview.pen_btn = self.ui.widget(RoundedButton, tools, "Ołówek", lambda: self._set_annotation_tool(preview, "pencil"), compact=True)
         preview.pen_btn.pack(side="left", padx=(0, 6))
-        preview.marker_btn = RoundedButton(tools, "Mazak", lambda: self._set_annotation_tool(preview, "highlighter"), compact=True)
+        preview.marker_btn = self.ui.widget(RoundedButton, tools, "Mazak", lambda: self._set_annotation_tool(preview, "highlighter"), compact=True)
         preview.marker_btn.pack(side="left", padx=(0, 6))
-        preview.undo_btn = RoundedButton(tools, "Cofnij", lambda: self._undo_annotation(preview), compact=True)
+        preview.undo_btn = self.ui.widget(RoundedButton, tools, "Cofnij", lambda: self._undo_annotation(preview), compact=True)
         preview.undo_btn.pack(side="left")
         preview.undo_btn.configure(state="disabled")
         preview.color_var = tk.StringVar(preview, value="Czerwony")
@@ -33,16 +33,25 @@ class PreviewAnnotations:
         for brush, text, variable, values, attribute, width in (
                 (brush_color, "Kolor", preview.color_var, tuple(COLORS), "color_picker", 9),
                 (brush_size, "Grubość", preview.brush_size_var, SIZES, "brush_size_picker", 8)):
-            tk.Label(brush, text=text, bg=BACKGROUND, fg=MUTED, font=("Segoe UI", 9)).pack(side="left", padx=(0, 6))
+            self.ui.widget(tk.Label, brush, text=text, bg=BACKGROUND, fg=MUTED, font=("Segoe UI", 9)).pack(side="left", padx=(0, 6))
             picker = ttk.Combobox(brush, textvariable=variable, values=values, width=width,
                                   state="disabled", style="Annotation.TCombobox", font=("Segoe UI", 9))
             picker.pack(side="left", padx=(0, 8))
             picker.bind("<<ComboboxSelected>>", lambda event: self._annotation_settings_changed(preview))
             setattr(preview, attribute, picker)
+        self._localize_annotation_choices(preview)
+
+    def _localize_annotation_choices(self, preview):
+        for picker, variable, choices in ((preview.color_picker, preview.color_var, COLORS),
+                                           (preview.brush_size_picker, preview.brush_size_var, SIZES)):
+            source = self.ui.source_value(variable.get(), choices)
+            picker.configure(values=tuple(self.ui.render(value) for value in choices))
+            variable.set(self.ui.render(source))
 
     def _annotation_settings_changed(self, preview):
         if preview.annotation_tool:
-            preview.brush_settings[preview.annotation_tool] = (preview.color_var.get(), preview.brush_size_var.get())
+            preview.brush_settings[preview.annotation_tool] = (self.ui.source_value(preview.color_var.get(), COLORS),
+                                                              self.ui.source_value(preview.brush_size_var.get(), SIZES))
         preview.canvas.focus_set()
 
     def _update_annotation_controls(self, preview):
@@ -61,8 +70,8 @@ class PreviewAnnotations:
         preview.annotation_tool = None if preview.annotation_tool == tool else tool
         if preview.annotation_tool:
             color, size = preview.brush_settings[preview.annotation_tool]
-            preview.color_var.set(color)
-            preview.brush_size_var.set(size)
+            preview.color_var.set(self.ui.render(color))
+            preview.brush_size_var.set(self.ui.render(size))
         preview.canvas.configure(cursor="crosshair" if preview.annotation_tool else "arrow")
         preview.canvas.focus_set()
         self._update_annotation_controls(preview)
@@ -74,11 +83,11 @@ class PreviewAnnotations:
         left, top, right, bottom = self._crop_image_bounds(preview)
         if not (left <= canvas.canvasx(event.x) < right and top <= canvas.canvasy(event.y) < bottom):
             return "break"
-        size_index = SIZES.index(preview.brush_size_var.get())
+        size_index = SIZES.index(self.ui.source_value(preview.brush_size_var.get(), SIZES))
         marker = preview.annotation_tool == "highlighter"
         width = ((12, 24, 40) if marker else (3, 6, 12))[size_index]
         point = self._crop_pointer_position(preview, event)
-        preview.annotation_stroke = Stroke([point], COLORS[preview.color_var.get()], width, 85 if marker else 255)
+        preview.annotation_stroke = Stroke([point], COLORS[self.ui.source_value(preview.color_var.get(), COLORS)], width, 85 if marker else 255)
         self._schedule_annotation_render(preview)
         return "break"
 

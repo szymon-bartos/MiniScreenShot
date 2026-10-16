@@ -84,7 +84,7 @@ class FirefoxCaptureTests(unittest.TestCase):
                 time.sleep(0.1)
             self.assertIn("focus=", window.title, "Local image page did not finish loading")
             root = tk.Tk()
-            app = ScreenCaptureApp(root)
+            app = ScreenCaptureApp(root, language="pl")
             root.update()
             with app._hidden_capture_windows():
                 # Supply a real activation gesture on this fixture's empty

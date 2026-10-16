@@ -12,11 +12,13 @@ import win32gui
 import win32api
 
 from ui_widgets import SURFACE, TEXT, MUTED
+from localization import LocalizedUI, msg
 
 
 class CaptureProgress:
-    def __init__(self, root, bbox):
+    def __init__(self, root, bbox, ui=None):
         self.root = root
+        self.ui = ui if ui is not None else LocalizedUI()
         self.started = time.monotonic()
         self.last_paint = 0
         self.closed = False
@@ -41,12 +43,12 @@ class CaptureProgress:
         self.spinner.create_oval(px(3), px(3), px(25), px(25), outline="#293854", width=px(3))
         self.arc = self.spinner.create_arc(px(3), px(3), px(25), px(25), start=0, extent=100,
                                            outline="#a5b4fc", width=px(3), style="arc")
-        tk.Label(card, text="Tworzę pełny zrzut", font=("Segoe UI", 10, "bold"),
+        self.ui.widget(tk.Label, card, text="Tworzę pełny zrzut", font=("Segoe UI", 10, "bold"),
                  fg=TEXT, bg=SURFACE, anchor="w").grid(row=0, column=1, sticky="ew")
-        self.phase = tk.Label(card, text="Ustalam granice zawartości…", font=("Segoe UI", 9),
+        self.phase = self.ui.widget(tk.Label, card, text="Ustalam granice zawartości…", font=("Segoe UI", 9),
                               fg=MUTED, bg=SURFACE, anchor="w", justify="left", wraplength=px(270))
         self.phase.grid(row=1, column=1, sticky="ew", pady=(px(3), 0))
-        self.elapsed = tk.Label(card, font=("Segoe UI", 8), fg="#a5b4fc", bg=SURFACE, anchor="w")
+        self.elapsed = self.ui.widget(tk.Label, card, font=("Segoe UI", 8), fg="#a5b4fc", bg=SURFACE, anchor="w")
         self.elapsed.grid(row=2, column=1, sticky="ew", pady=(px(6), 0))
         self.window.update_idletasks()
         self.handle = win32gui.GetAncestor(self.window.winfo_id(), 2)
@@ -66,7 +68,7 @@ class CaptureProgress:
                               win32con.SWP_NOACTIVATE | win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW)
 
     def set_message(self, message):
-        self.phase.configure(text=message)
+        self.ui.set(self.phase, text=message)
         self.pump(force=True)
 
     def pump(self, force=False):
@@ -77,7 +79,7 @@ class CaptureProgress:
             return
         self.last_paint = now
         self.spinner.itemconfigure(self.arc, start=-(now - self.started) * 240 % 360)
-        self.elapsed.configure(text=f"{math.floor(now - self.started)} s  ·  Esc: anuluj")
+        self.ui.set(self.elapsed, text=msg("{seconds} s  ·  Esc: anuluj", seconds=math.floor(now - self.started)))
         self.window.update_idletasks()
 
     @contextmanager

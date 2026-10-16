@@ -37,7 +37,7 @@ class LiveScrollTests(unittest.TestCase):
         self.assertTrue(self.handle, "Synthetic test window did not start")
         self.root = tk.Tk()
         self.addCleanup(self.root.destroy)
-        self.app = ScreenCaptureApp(self.root)
+        self.app = ScreenCaptureApp(self.root, language="pl")
         self.root.update()
         # Leave a pinned preview open: it must not steal focus during the next capture.
         self.old_preview = self.app._show_preview(document_image(421, 363), "old", "Poprzedni zrzut")

@@ -12,8 +12,8 @@ import win32con
 import win32gui
 
 
-executable = Path(sys.argv[1] if len(sys.argv) > 1 else "dist/MiniScreenShot_v1.1.7/MiniScreenShot_v1.1.7.exe").resolve()
-title = "MiniScreenShot v1.1.7"
+executable = Path(sys.argv[1] if len(sys.argv) > 1 else "dist/MiniScreenShot_v1.1.8/MiniScreenShot_v1.1.8.exe").resolve()
+title = "MiniScreenShot v1.1.8"
 
 # Check that every ICO resolution is actually embedded in the packaged EXE.
 icon_data = Path("assets/capture-frame.ico").read_bytes()

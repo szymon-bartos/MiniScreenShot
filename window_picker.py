@@ -5,6 +5,7 @@ from tkinter import ttk
 
 from ui_widgets import BACKGROUND, SURFACE, TEXT, MUTED, RoundedButton
 from window_catalog import describe_window, window_is_available
+from localization import msg
 
 
 class InlineWindowPicker:
@@ -19,15 +20,15 @@ class InlineWindowPicker:
         self.window_picker_card.grid(row=2, column=0, sticky="ew", pady=(px(18), 0))
         self.window_picker_card.columnconfigure(0, weight=1)
         self.window_picker_card.grid_remove()
-        tk.Label(self.window_picker_card, text="Wybierz okno aplikacji", bg=SURFACE, fg=TEXT,
+        self.ui.widget(tk.Label, self.window_picker_card, text="Wybierz okno aplikacji", bg=SURFACE, fg=TEXT,
                  font=("Segoe UI", 11, "bold")).grid(row=0, column=0, sticky="w")
-        self.refresh_windows_button = RoundedButton(self.window_picker_card, "Odśwież", self._refresh_window_picker, background=SURFACE)
+        self.refresh_windows_button = self.ui.widget(RoundedButton, self.window_picker_card, "Odśwież", self._refresh_window_picker, background=SURFACE)
         self.refresh_windows_button.grid(row=0, column=1, sticky="e", padx=(px(12), 0))
 
         search = tk.Frame(self.window_picker_card, bg=BACKGROUND, padx=px(10), pady=px(8))
         search.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(px(12), px(12)))
         search.columnconfigure(1, weight=1)
-        tk.Label(search, text="Szukaj", bg=BACKGROUND, fg=MUTED, font=("Segoe UI", 9)).grid(row=0, column=0, padx=(0, px(12)))
+        self.ui.widget(tk.Label, search, text="Szukaj", bg=BACKGROUND, fg=MUTED, font=("Segoe UI", 9)).grid(row=0, column=0, padx=(0, px(12)))
         self.window_search_entry = tk.Entry(search, textvariable=self.window_filter, bg=BACKGROUND, fg=TEXT,
                                             insertbackground=TEXT, selectbackground="#4f46e5", bd=0,
                                             highlightthickness=0, font=("Segoe UI", 10))
@@ -45,8 +46,8 @@ class InlineWindowPicker:
         table.columnconfigure(0, weight=1)
         self.window_table = ttk.Treeview(table, columns=("program", "document"), show="headings", height=5,
                                          selectmode="browse", style="Windows.Treeview")
-        self.window_table.heading("program", text="Program", anchor="w")
-        self.window_table.heading("document", text="Plik, strona lub tytuł okna", anchor="w")
+        self.ui.heading(self.window_table, "program", "Program", anchor="w")
+        self.ui.heading(self.window_table, "document", "Plik, strona lub tytuł okna", anchor="w")
         self.window_table.column("program", width=px(180), minwidth=px(130), stretch=False)
         self.window_table.column("document", width=px(320), minwidth=px(160), stretch=True)
         self.window_table.grid(row=0, column=0, sticky="ew")
@@ -55,7 +56,7 @@ class InlineWindowPicker:
         horizontal = ttk.Scrollbar(table, orient="horizontal", command=self.window_table.xview, style="Preview.Horizontal.TScrollbar")
         horizontal.grid(row=1, column=0, sticky="ew")
         self.window_table.configure(yscrollcommand=vertical.set, xscrollcommand=horizontal.set)
-        self.window_picker_message = tk.Label(self.window_picker_card, bg=SURFACE, fg=MUTED, justify="left", anchor="w",
+        self.window_picker_message = self.ui.widget(tk.Label, self.window_picker_card, bg=SURFACE, fg=MUTED, justify="left", anchor="w",
                                                font=("Segoe UI", 9), wraplength=px(550))
         self.window_picker_message.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(px(10), 0))
         self.window_table.bind("<<TreeviewSelect>>", self._window_selection_changed)
@@ -81,18 +82,19 @@ class InlineWindowPicker:
         except Exception as exc:
             self.window_entries = []
             self._filter_window_list()
-            self.window_picker_message.configure(text="Nie udało się odczytać okien. Spróbuj odświeżyć listę.")
+            self.ui.set(self.window_picker_message, text="Nie udało się odczytać okien. Spróbuj odświeżyć listę.")
             self._add_debug_log(f"Window list failed: {exc}")
 
     def _filter_window_list(self):
         query = self.window_filter.get().strip().casefold()
-        entries = [entry for entry in self.window_entries if query in entry.label.casefold()]
+        entries = [entry for entry in self.window_entries
+                   if query in entry.label.casefold() or query in self.ui.render(entry.program).casefold()]
         self.window_table.delete(*self.window_table.get_children())
         self.window_rows = {}
         for index, entry in enumerate(entries):
             row = f"window_{index}"
             self.window_rows[row] = entry
-            self.window_table.insert("", "end", iid=row, values=(entry.program, entry.document or "Okno aplikacji"))
+            self.window_table.insert("", "end", iid=row, values=(self.ui.render(entry.program), entry.document or self.ui.render("Okno aplikacji")))
             if entry.key == self.selected_window_key:
                 self.window_table.selection_set(row)
                 self.window_table.focus(row)
@@ -105,14 +107,14 @@ class InlineWindowPicker:
         entry = self.window_rows.get(selected[0]) if selected else None
         self.selected_window_key = entry.key if entry else None
         if entry:
-            message = entry.label
+            message = msg("{program} — {document}", program=msg(entry.program), document=entry.document) if entry.document else msg(entry.program)
         elif not self.window_entries:
             message = "Brak dostępnych okien. Otwórz aplikację i kliknij Odśwież."
         elif not self.window_rows:
             message = "Brak wyników. Zmień wyszukiwaną nazwę programu lub pliku."
         else:
-            message = f"Dostępne okna: {len(self.window_rows)}. Zaznacz jedno, aby wykonać zrzut."
-        self.window_picker_message.configure(text=message)
+            message = msg("Dostępne okna: {count}. Zaznacz jedno, aby wykonać zrzut.", count=len(self.window_rows))
+        self.ui.set(self.window_picker_message, text=message)
         if self.selected_mode == "window":
             self.capture_action.configure(state="normal" if entry else "disabled")
 

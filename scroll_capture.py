@@ -6,6 +6,7 @@ import math
 import logging
 
 from PIL import Image, ImageChops, ImageStat
+from localization import msg
 
 logger = logging.getLogger(__name__)
 
@@ -365,8 +366,8 @@ class ScrollingCapture:
     def _record(self, store, frame, x, y, dx, dy):
         store.add(frame, x, y, dx, dy, viewport=self.moving)
         self.frame_count += 1
-        scaling = f" · rozdzielczość {store.scale:.0%}" if store.scale < 1 else ""
-        self.progress(f"Przechwycono fragment {self.frame_count} · łączę obraz na bieżąco{scaling}…")
+        scaling = msg(" · rozdzielczość {scale:.0%}", scale=store.scale) if store.scale < 1 else ""
+        self.progress(msg("Przechwycono fragment {count} · łączę obraz na bieżąco{scaling}…", count=self.frame_count, scaling=scaling))
 
     def capture(self):
         from capture_store import CaptureStore, CaptureStorageError
@@ -426,7 +427,7 @@ class ScrollingCapture:
             if self.moving is None:
                 return initial
             self.viewport = self.moving
-            self.progress(f"Kończę zapis {self.frame_count} przechwyconych fragmentów…")
+            self.progress(msg("Kończę zapis {count} przechwyconych fragmentów…", count=self.frame_count))
             # All input is finished. A closed/moved source must not discard
             # already captured frames while they are being assembled.
             pulse = getattr(self.driver, "check_cancelled", getattr(self.driver, "pulse", lambda: None))

@@ -21,7 +21,7 @@ class PreviewLayoutTests(unittest.TestCase):
         self.root.withdraw()
         self.callback_errors = []
         self.root.report_callback_exception = lambda *args: self.callback_errors.append(args)
-        self.app = ScreenCaptureApp(self.root)
+        self.app = ScreenCaptureApp(self.root, language="pl")
         self.image = Image.new("RGB", (1600, 900), "#6b91b3")
         drawing = ImageDraw.Draw(self.image)
         drawing.rounded_rectangle((120, 120, 1480, 780), radius=24, fill="#f8fafc")
@@ -446,7 +446,7 @@ class MainWindowLayoutTests(unittest.TestCase):
         self.root = tk.Tk()
         self.callback_errors = []
         self.root.report_callback_exception = lambda *args: self.callback_errors.append(args)
-        self.app = ScreenCaptureApp(self.root)
+        self.app = ScreenCaptureApp(self.root, language="pl")
         self.windows = [SimpleNamespace(title=title) for title in (
             "Projekt – Google Chrome", "Raport - Q1.xlsx - Excel", "Plan.txt — Notatnik")]
         self.window_source = patch.object(self.app, "get_selectable_windows", return_value=self.windows)
