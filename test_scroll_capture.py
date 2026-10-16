@@ -64,6 +64,59 @@ class ScrollCaptureTests(unittest.TestCase):
         first_forward = next(index for index, event in enumerate(driver.events) if event[1] > 0)
         self.assertTrue(all(direction > 0 for _, direction, _ in driver.events[first_forward:]))
 
+    def test_narrow_crm_panel_scrolls_inside_mostly_fixed_interface(self):
+        document = document_image(50, 900)
+        driver = FakeScrollDriver(document, viewport=(50, 400), native=False)
+        fixed = document_image(900, 600)
+        def snapshot():
+            driver.snapshots += 1
+            frame = fixed.copy()
+            frame.paste(document.crop((0, driver.y, 50, driver.y + 400)), (425, 100))
+            return frame
+        driver.snapshot = snapshot
+        engine = ScrollingCapture(driver)
+        result = engine.capture()
+        self.assertIsNone(engine.incomplete_reason)
+        self.assertGreater(engine.frame_count, 1)
+        self.assert_same_image(result, document)
+
+    def test_shallow_horizontal_panel_scrolls_inside_fixed_interface(self):
+        document = document_image(1200, 36)
+        driver = FakeScrollDriver(document, viewport=(600, 36), native=False)
+        fixed = document_image(900, 600)
+        def snapshot():
+            driver.snapshots += 1
+            frame = fixed.copy()
+            frame.paste(document.crop((driver.x, 0, driver.x + 600, 36)), (150, 280))
+            return frame
+        driver.snapshot = snapshot
+        engine = ScrollingCapture(driver, vertical=False, horizontal=True)
+        result = engine.capture()
+        self.assertIsNone(engine.incomplete_reason)
+        self.assertGreater(engine.frame_count, 1)
+        self.assert_same_image(result, document)
+
+    def test_window_toolbar_is_kept_once_above_complete_content(self):
+        document = document_image(240, 509)
+        driver = FakeScrollDriver(document)
+        first = driver.snapshot()
+        engine = ScrollingCapture(driver, include_window_frame=True)
+        result = engine.capture()
+        self.assertEqual(result.size, (272, 573))
+        self.assertEqual(result.info["capture_content_box"], (16, 40, 256, 549))
+        self.assert_same_image(result.crop((16, 40, 256, 549)), document)
+        self.assert_same_image(result.crop((0, 0, 272, 40)), first.crop((0, 0, 272, 40)))
+
+    def test_window_frame_survives_horizontal_and_vertical_stitching(self):
+        document = document_image(419, 509)
+        driver = FakeScrollDriver(document)
+        first = driver.snapshot()
+        engine = ScrollingCapture(driver, vertical=True, horizontal=True, include_window_frame=True)
+        result = engine.capture()
+        self.assertEqual(result.size, (451, 573))
+        self.assert_same_image(result.crop(result.info["capture_content_box"]), document)
+        self.assert_same_image(result.crop((0, 0, 272, 40)), first.crop((0, 0, 272, 40)))
+
     def test_horizontal_capture_grows_width_instead_of_stacking_vertically(self):
         document = document_image(607, 180)
         driver = FakeScrollDriver(document, position=(150, 0))

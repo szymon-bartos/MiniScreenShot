@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from contextlib import contextmanager
 
-APP_VERSION = "1.1.5"
+APP_VERSION = "1.1.6"
 
 from tk_runtime import prepare_tk_runtime
 
@@ -884,7 +884,7 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
                         driver.pulse = self.capture_progress.pump
                         driver.frame_guard = self.capture_progress.capture_frame
                     engine = ScrollingCapture(driver, vertical=self.vertical_var.get(), horizontal=self.horizontal_var.get(),
-                                              progress=self._scroll_progress)
+                                              progress=self._scroll_progress, include_window_frame=True)
                     image = engine.capture()
                 finally:
                     if getattr(self, "capture_progress", None):
@@ -893,11 +893,17 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
                     driver.close()
             reason = getattr(engine, "incomplete_reason", None)
             reason = reason if isinstance(reason, str) else None
-            preview = self._capture_to_preview(image, "selected_window_scroll", f"Okno: {window.title} — " + ("zrzut częściowy" if reason else "z przewijaniem"))
+            no_movement = not reason and getattr(engine, "frame_count", None) == 1
+            description = "zrzut częściowy" if reason else ("widoczny obszar" if no_movement else "z przewijaniem")
+            preview = self._capture_to_preview(image, "selected_window_scroll", f"Okno: {window.title} — {description}")
             if reason:
                 preview.heading.configure(text="Zrzut częściowy", fg="#fbbf24")
                 preview.source_label.configure(text=reason)
                 self.set_status("Zachowano zrzut częściowy. " + reason)
+            elif no_movement:
+                preview.heading.configure(text="Widoczny obszar", fg="#fbbf24")
+                preview.source_label.configure(text="Nie wykryto przesunięcia zawartości. Przechwycono tylko widoczny obszar.")
+                self.set_status("Przechwycono widoczny obszar — nie wykryto przewijania.")
             else:
                 self.set_status("Zrzut gotowy. Możliwe niewielkie zakładki." if engine.approximate is True else "Zrzut gotowy. Otworzono podgląd.")
         except (CaptureCancelled, ScrollCaptureError) as exc:

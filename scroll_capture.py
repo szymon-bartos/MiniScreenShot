@@ -57,6 +57,26 @@ def motion_bounds(first, second):
     return (columns[0] + box[0], rows[0] + box[1], columns[-1] + box[0] + 1, rows[-1] + box[1] + 1) if rows and columns else None
 
 
+def _central_scroll_region(first, second, axis):
+    """A narrow panel under the wheel can move inside a mostly fixed CRM UI."""
+    box = motion_bounds(first, second)
+    if box is None:
+        return None
+    left, top, right, bottom = box
+    if not (left <= first.width // 2 < right and top <= first.height // 2 < bottom):
+        return None
+    extent, across = ((bottom - top, right - left) if axis == "y" else (right - left, bottom - top))
+    dimension = first.height if axis == "y" else first.width
+    return box if extent >= max(48, dimension * 0.35) and across >= 24 else None
+
+
+def scroll_frames_equal(first, second, axis, stable_ratio=0.8):
+    if not frames_equal(first, second, stable_ratio):
+        return False
+    box = _central_scroll_region(first, second, axis)
+    return box is None or frames_equal(first.crop(box), second.crop(box), stable_ratio)
+
+
 def _registration_score(first, second, distance):
     height = first.height
     margin = max(2, height // 20)
@@ -108,7 +128,12 @@ def estimate_shift(first, second, axis, expected=None):
     if first.size != second.size:
         raise ScrollCaptureError("Rozmiar przechwytywanego okna zmienił się podczas przewijania.")
     if frames_equal(first, second):
-        return 0
+        box = _central_scroll_region(first, second, axis)
+        if box is None:
+            return 0
+        first, second = first.crop(box), second.crop(box)
+        if frames_equal(first, second):
+            return 0
     if axis == "x":
         first, second = first.transpose(Image.Transpose.TRANSPOSE), second.transpose(Image.Transpose.TRANSPOSE)
     first, second = first.convert("L"), second.convert("L")
@@ -182,7 +207,7 @@ def estimate_shift(first, second, axis, expected=None):
 
 class ScrollingCapture:
     def __init__(self, driver, vertical=True, horizontal=False, progress=None, max_steps=240, max_pixels=24_000_000,
-                 max_output_pixels=24_000_000):
+                 max_output_pixels=24_000_000, include_window_frame=False):
         self.driver = driver
         self.axes = (["x"] if horizontal else []) + (["y"] if vertical else [])
         self.progress = progress or (lambda message: None)
@@ -190,6 +215,7 @@ class ScrollingCapture:
         # This is a RAM threshold, not a limit on the final screenshot size.
         self.max_pixels = max_pixels
         self.max_output_pixels = max_output_pixels
+        self.include_window_frame = include_window_frame
         self.moving = self.viewport = None
         self.approximate = False
         self.incomplete_reason = None
@@ -264,7 +290,7 @@ class ScrollingCapture:
                 return previous
             self.driver.scroll(axis, -1, 48)
             current = self.driver.snapshot()
-            unchanged = unchanged + 1 if frames_equal(previous, current, stable_ratio=0.6) else 0
+            unchanged = unchanged + 1 if scroll_frames_equal(previous, current, axis, stable_ratio=0.6) else 0
             if unchanged >= 2:
                 return current
             previous = current
@@ -273,13 +299,24 @@ class ScrollingCapture:
     def _advance(self, previous, axis):
         if self.driver.at_edge(axis, 1) is True:
             return None, 0
-        dimension = previous.width if axis == "x" else previous.height
-        units = self._units.get(axis, max(1, min(3, dimension // 240)))
+        units = self._units.get(axis, 1)
         expected = self._rates.get(axis, 0) * units or None
         for attempt in range(3):
             self.driver.scroll(axis, 1, units)
             current = self.driver.snapshot()
-            if frames_equal(previous, current):
+            displacement = getattr(self.driver, "scroll_displacement", None)
+            measured = displacement(axis) if displacement is not None else None
+            region = self.moving
+            if region is None:
+                candidate = _central_scroll_region(previous, current, axis)
+                if candidate is not None:
+                    across = candidate[2] - candidate[0] if axis == "y" else candidate[3] - candidate[1]
+                    full_across = previous.width if axis == "y" else previous.height
+                    if across <= full_across * 0.75:
+                        region = candidate
+            region = region or (0, 0, previous.width, previous.height)
+            first, second = previous.crop(region), current.crop(region)
+            if measured is None and scroll_frames_equal(first, second, axis):
                 edge = self.driver.at_edge(axis, 1)
                 if edge is True:
                     return None, 0
@@ -288,10 +325,8 @@ class ScrollingCapture:
                 if attempt == 2:
                     return None, 0
                 continue
-            region = self.moving or (0, 0, previous.width, previous.height)
-            first, second = previous.crop(region), current.crop(region)
             try:
-                distance = estimate_shift(first, second, axis, expected)
+                distance = measured if measured is not None else estimate_shift(first, second, axis, expected)
             except ScrollCaptureError:
                 self.progress("Dopasowuję fragment po odświeżeniu strony…")
                 current = self.driver.snapshot()
@@ -302,7 +337,12 @@ class ScrollingCapture:
                 if attempt == 2:
                     raise ScrollCaptureError("Okno nie pokazuje przesunięcia zawartości. Zachowano wcześniejszą część.")
                 continue
-            self._union_motion(previous, current, axis, distance)
+            if measured is None:
+                self._union_motion(previous, current, axis, distance)
+            logger.info("Scroll displacement: axis=%s pixels=%s content=%s", axis, distance, self.moving)
+            set_region = getattr(self.driver, "set_content_region", None)
+            if set_region is not None:
+                set_region(self.moving)
             self._counts[axis] = self._counts.get(axis, 0) + 1
             # Scale the matching hint whenever the wheel step changes. The last
             # partial step must not reduce the normal pixels-per-unit estimate.
@@ -330,6 +370,11 @@ class ScrollingCapture:
             except ScrollCaptureError as exc:
                 self.incomplete_reason = str(exc)
                 break
+        bounds = getattr(self.driver, "capture_bounds", None)
+        bounds = bounds(self.axes) if bounds is not None else None
+        content_size = None
+        if bounds is not None:
+            self.moving, content_size = bounds
         with CaptureStore(self.max_pixels, self.max_output_pixels) as store:
             x = y = 0
             dx, dy = initial.size
@@ -375,4 +420,4 @@ class ScrollingCapture:
             # All input is finished. A closed/moved source must not discard
             # already captured frames while they are being assembled.
             pulse = getattr(self.driver, "check_cancelled", getattr(self.driver, "pulse", lambda: None))
-            return store.assemble(self.viewport, pulse)
+            return store.assemble(self.viewport, pulse, include_window_frame=self.include_window_frame, content_size=content_size)

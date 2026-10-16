@@ -18,20 +18,20 @@ call .venv\Scripts\activate.bat
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 if errorlevel 1 exit /b 1
-python -m PyInstaller --noconfirm --clean MiniScreenShot_v1.1.5.spec
+python -m PyInstaller --noconfirm --clean MiniScreenShot_v1.1.6.spec
 if errorlevel 1 exit /b 1
-copy /y LICENSE.txt dist\MiniScreenShot_v1.1.5\LICENSE.txt >nul
+copy /y LICENSE.txt dist\MiniScreenShot_v1.1.6\LICENSE.txt >nul
 if errorlevel 1 exit /b 1
-powershell -NoProfile -Command "Compress-Archive -LiteralPath 'dist\MiniScreenShot_v1.1.5' -DestinationPath 'dist\MiniScreenShot_v1.1.5_windows.zip' -Force"
+powershell -NoProfile -Command "Compress-Archive -LiteralPath 'dist\MiniScreenShot_v1.1.6' -DestinationPath 'dist\MiniScreenShot_v1.1.6_windows.zip' -Force"
 if errorlevel 1 exit /b 1
-powershell -NoProfile -Command "'{0}  {1}' -f (Get-FileHash -LiteralPath 'dist\MiniScreenShot_v1.1.5_windows.zip' -Algorithm SHA256).Hash.ToLowerInvariant(), 'MiniScreenShot_v1.1.5_windows.zip' | Set-Content -LiteralPath 'dist\MiniScreenShot_v1.1.5_SHA256SUMS.txt' -Encoding ascii"
+powershell -NoProfile -Command "'{0}  {1}' -f (Get-FileHash -LiteralPath 'dist\MiniScreenShot_v1.1.6_windows.zip' -Algorithm SHA256).Hash.ToLowerInvariant(), 'MiniScreenShot_v1.1.6_windows.zip' | Set-Content -LiteralPath 'dist\MiniScreenShot_v1.1.6_SHA256SUMS.txt' -Encoding ascii"
 if errorlevel 1 exit /b 1
 
 echo.
 echo Gotowy program i paczka ZIP znajduja sie w katalogu dist
 echo.
-if exist "dist\MiniScreenShot_v1.1.5\MiniScreenShot_v1.1.5.exe" (
-    echo Znalazlem: dist\MiniScreenShot_v1.1.5\MiniScreenShot_v1.1.5.exe
+if exist "dist\MiniScreenShot_v1.1.6\MiniScreenShot_v1.1.6.exe" (
+    echo Znalazlem: dist\MiniScreenShot_v1.1.6\MiniScreenShot_v1.1.6.exe
 ) else (
     echo Nie znaleziono pliku EXE. Sprawdz kompilacje.
 )

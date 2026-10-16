@@ -206,7 +206,7 @@ class CaptureTargetingTests(unittest.TestCase):
         engine.capture.return_value = image
         with patch("app_advanced.WindowsScrollDriver", return_value=driver), patch("app_advanced.ScrollingCapture", return_value=engine) as constructor, patch("app_advanced.time.sleep"), patch.object(self.app, "_capture_to_preview") as preview:
             self.app._capture_scrolled_window(window)
-        constructor.assert_called_once_with(driver, vertical=False, horizontal=True, progress=self.app._scroll_progress)
+        constructor.assert_called_once_with(driver, vertical=False, horizontal=True, progress=self.app._scroll_progress, include_window_frame=True)
         engine.capture.assert_called_once_with()
         driver.close.assert_called_once_with()
         self.assertIs(preview.call_args.args[0], image)
@@ -235,6 +235,21 @@ class CaptureTargetingTests(unittest.TestCase):
         preview.heading.configure.assert_called_once_with(text="Zrzut częściowy", fg="#fbbf24")
         preview.source_label.configure.assert_called_once_with(text=engine.incomplete_reason)
         driver.close.assert_called_once_with()
+
+    def test_stationary_window_preview_does_not_claim_full_scrolling_capture(self):
+        self.app.vertical_var = type("Option", (), {"get": lambda self: True})()
+        self.app.horizontal_var = type("Option", (), {"get": lambda self: False})()
+        self.app._focus_window_if_possible = lambda window: None
+        self.app.set_status = Mock()
+        driver, engine, preview = Mock(), Mock(), Mock()
+        engine.capture.return_value = Image.new("RGB", (240, 180), "white")
+        engine.incomplete_reason = None
+        engine.frame_count = 1
+        with patch("app_advanced.WindowsScrollDriver", return_value=driver), patch("app_advanced.ScrollingCapture", return_value=engine), patch("app_advanced.time.sleep"), patch.object(self.app, "_capture_to_preview", return_value=preview):
+            self.app._capture_scrolled_window(DummyWindow("Browser", 10, 20, 200, 300))
+        preview.heading.configure.assert_called_once_with(text="Widoczny obszar", fg="#fbbf24")
+        self.assertIn("tylko widoczny obszar", preview.source_label.configure.call_args.kwargs["text"])
+        self.assertIn("nie wykryto przewijania", self.app.set_status.call_args.args[0])
 
     def test_deduplicate_screenshots_removes_duplicate_bottom_frames(self):
         frame = Image.new("RGB", (200, 200), "white")

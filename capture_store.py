@@ -1,5 +1,6 @@
 """Spool captured frames once, then assemble without a second scroll pass."""
 from dataclasses import dataclass
+from contextlib import contextmanager
 import atexit
 import math
 import mmap
@@ -135,10 +136,28 @@ class CaptureStore:
         self.frames.append(StoredFrame(path, frame.size, x, y, dx, dy, source_size=source_size))
         self.bytes_written += size
 
-    def assemble(self, viewport, pulse=lambda: None):
+    @contextmanager
+    def _open_frame(self, record):
+        if record.image is not None:
+            yield record.image
+        else:
+            with record.path.open("rb") as source:
+                with mmap.mmap(source.fileno(), 0, access=mmap.ACCESS_READ) as buffer:
+                    image = Image.frombuffer("RGBA", record.size, buffer, "raw", "RGBA", 0, 1)
+                    try:
+                        yield image
+                    finally:
+                        image.close()
+
+    def assemble(self, viewport, pulse=lambda: None, include_window_frame=False, content_size=None):
         left, top, right, bottom = viewport
         width, height = right - left, bottom - top
-        original_size = (width + max(frame.x for frame in self.frames), height + max(frame.y for frame in self.frames))
+        captured_size = (width + max(frame.x for frame in self.frames), height + max(frame.y for frame in self.frames))
+        content_size = tuple(min(requested, captured) for requested, captured in zip(content_size, captured_size)) if content_size else captured_size
+        source_size = self.frames[0].source_size or self.frames[0].size
+        offset_x, offset_y = (left, top) if include_window_frame else (0, 0)
+        original_size = ((max(source_size[0], content_size[0] + source_size[0] - width), content_size[1] + source_size[1] - height)
+                         if include_window_frame else content_size)
         self._fit_scale(original_size)
         size = tuple(max(1, round(value * self.scale)) for value in original_size)
         scale_x, scale_y = size[0] / original_size[0], size[1] / original_size[1]
@@ -153,7 +172,46 @@ class CaptureStore:
             atexit.register(_close_live_image, weakref.ref(result))
         else:
             result = Image.new("RGB", size, "white")
+        def paste(tile, destination):
+            if backing is None:
+                result.paste(tile, destination)
+            else:
+                raw = tile.convert("RGBA").tobytes()
+                stride = tile.width * 4
+                for row in range(tile.height):
+                    offset = ((destination[1] + row) * size[0] + destination[0]) * 4
+                    backing.buffer[offset:offset + stride] = raw[row * stride:(row + 1) * stride]
+                    if row % 128 == 0:
+                        pulse()
         try:
+            if include_window_frame:
+                if backing is not None:
+                    block = b"\xff" * min(len(backing.buffer), 1024**2)
+                    for start in range(0, len(backing.buffer), len(block)):
+                        length = min(len(block), len(backing.buffer) - start)
+                        backing.buffer[start:start + length] = block[:length]
+                # Keep fixed application chrome once, outside the stitched body.
+                # Never stretch or repeat a toolbar down the captured document.
+                max_x, max_y = content_size[0] - width, content_size[1] - height
+                pieces = (((0, 0, source_size[0], top), (0, 0)),
+                          ((0, top, left, min(bottom, top + content_size[1])), (0, top)),
+                          ((right, top, source_size[0], min(bottom, top + content_size[1])), (right + max(0, max_x), top)),
+                          ((0, bottom, source_size[0], source_size[1]), (0, bottom + max_y)))
+                with self._open_frame(self.frames[0]) as source:
+                    sx, sy = source.width / source_size[0], source.height / source_size[1]
+                    for box, origin in pieces:
+                        if box[2] <= box[0] or box[3] <= box[1]:
+                            continue
+                        end = (min(size[0], round((origin[0] + box[2] - box[0]) * scale_x)),
+                               min(size[1], round((origin[1] + box[3] - box[1]) * scale_y)))
+                        destination = (round(origin[0] * scale_x), round(origin[1] * scale_y))
+                        tile_size = (end[0] - destination[0], end[1] - destination[1])
+                        if min(tile_size) < 1:
+                            continue
+                        tile = source.transform(tile_size, Image.Transform.EXTENT,
+                                                (box[0] * sx, box[1] * sy, box[2] * sx, box[3] * sy), Image.Resampling.BILINEAR)
+                        paste(tile, destination)
+                        tile.close()
             for record in self.frames:
                 pulse()
                 # Replace a small part of the overlap when reducing resolution
@@ -164,18 +222,18 @@ class CaptureStore:
                 box = (left + cut_left, top + cut_top, right, bottom)
                 # Round shared boundaries in global coordinates. Independently
                 # rounding each tile's width would leave seams or repeat rows.
-                destination = (round((record.x + cut_left) * scale_x), round((record.y + cut_top) * scale_y))
-                end = (round((record.x + width) * scale_x), round((record.y + height) * scale_y))
+                destination = (round((offset_x + record.x + cut_left) * scale_x), round((offset_y + record.y + cut_top) * scale_y))
+                end = (round((offset_x + min(record.x + width, content_size[0])) * scale_x), round((offset_y + min(record.y + height, content_size[1])) * scale_y))
                 target_size = (end[0] - destination[0], end[1] - destination[1])
                 source_size = record.source_size or record.size
                 def render(source):
                     if size == original_size and record.size == source_size:
-                        return source.crop(box)
+                        return source.crop((box[0], box[1], box[0] + target_size[0], box[1] + target_size[1]))
                     sx, sy = record.size[0] / source_size[0], record.size[1] / source_size[1]
-                    extent = ((destination[0] / scale_x - record.x + left) * sx,
-                              (destination[1] / scale_y - record.y + top) * sy,
-                              (end[0] / scale_x - record.x + left) * sx,
-                              (end[1] / scale_y - record.y + top) * sy)
+                    extent = ((destination[0] / scale_x - offset_x - record.x + left) * sx,
+                              (destination[1] / scale_y - offset_y - record.y + top) * sy,
+                              (end[0] / scale_x - offset_x - record.x + left) * sx,
+                              (end[1] / scale_y - offset_y - record.y + top) * sy)
                     return source.transform(target_size, Image.Transform.EXTENT, extent, Image.Resampling.BILINEAR)
                 if min(target_size) < 1:
                     if record.image is not None:
@@ -184,34 +242,22 @@ class CaptureStore:
                     if record.path is not None:
                         record.path.unlink()
                     continue
+                with self._open_frame(record) as source:
+                    tile = render(source)
                 if record.image is not None:
-                    tile = render(record.image)
                     record.image.close()
                     record.image = None
-                else:
-                    with record.path.open("rb") as source:
-                        with mmap.mmap(source.fileno(), 0, access=mmap.ACCESS_READ) as buffer:
-                            original = Image.frombuffer("RGBA", record.size, buffer, "raw", "RGBA", 0, 1)
-                            try:
-                                tile = render(original)
-                            finally:
-                                original.close()
-                if backing is None:
-                    result.paste(tile, destination)
-                else:
-                    raw = tile.convert("RGBA").tobytes()
-                    stride = tile.width * 4
-                    for row in range(tile.height):
-                        offset = ((destination[1] + row) * size[0] + destination[0]) * 4
-                        backing.buffer[offset:offset + stride] = raw[row * stride:(row + 1) * stride]
-                        if row % 128 == 0:
-                            pulse()
+                paste(tile, destination)
                 tile.close()
                 if record.path is not None:
                     record.path.unlink()
             if size != original_size:
                 result.info["capture_original_size"] = original_size
                 result.info["capture_scale"] = self.scale
+            if include_window_frame:
+                result.info["capture_content_box"] = (round(offset_x * scale_x), round(offset_y * scale_y),
+                                                      round((offset_x + content_size[0]) * scale_x),
+                                                      round((offset_y + content_size[1]) * scale_y))
             return result
         except Exception:
             result.close()

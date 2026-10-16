@@ -42,6 +42,19 @@ class SnapshotTimingTests(unittest.TestCase):
         self.assertIs(self.driver.snapshot(), self.black)
         self.assertGreaterEqual(self.now, 0.34)
 
+    def test_browser_waits_for_wheel_render_delayed_by_busy_page(self):
+        self.driver._browser = True
+        self.driver._grab = lambda: self.white if self.now < 0.45 else self.black
+        self.assertIs(self.driver.snapshot(), self.black)
+        self.assertGreaterEqual(self.now, 0.5)
+
+    def test_busy_browser_does_not_finish_during_short_render_pause(self):
+        self.driver._browser = True
+        intermediate = Image.new("RGB", (120, 100), "gray")
+        self.driver._grab = lambda: self.white if self.now < 0.10 else (intermediate if self.now < 0.18 else self.black)
+        self.assertIs(self.driver.snapshot(), self.black)
+        self.assertGreaterEqual(self.now, 0.25)
+
     def test_escape_remains_responsive_while_waiting_for_render(self):
         self.driver._check.side_effect = [None, CaptureCancelled("Esc")]
         with self.assertRaises(CaptureCancelled):

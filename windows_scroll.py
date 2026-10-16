@@ -112,6 +112,7 @@ class WindowsScrollDriver:
         self.frame_guard = nullcontext
         self._last_frame = None
         self._scroll_time = None
+        self._content_region = None
         self._browser = win32gui.GetClassName(self.handle).startswith(("Mozilla", "Chrome_"))
         self._corner_style = None
         ensure_window_foreground(self.handle)
@@ -155,6 +156,18 @@ class WindowsScrollDriver:
             self._grabber = DesktopFrameGrabber(self.bbox)
         except OSError as exc:
             logger.warning("Direct rectangle capture unavailable; using Pillow: %s", exc)
+        self._excel = None
+        if win32gui.GetClassName(self.handle) == "XLMAIN":
+            try:
+                from excel_scroll import ExcelSheetScroll
+                self._excel = ExcelSheetScroll(self.handle, self.bbox)
+                self._content_region = self._excel.region
+                logger.info("Excel data bounds: row=%s column=%s content=%s", self._excel.last_row, self._excel.last_column, self._excel.region)
+            except Exception as exc:
+                self.close()
+                if isinstance(exc, ScrollCaptureError):
+                    raise
+                raise ScrollCaptureError("Nie udało się odczytać granic danych Excela. Zakończ edycję komórki i zamknij okna dialogowe.") from exc
 
     def _client_bbox(self):
         if not win32gui.IsWindow(self.handle):
@@ -206,6 +219,8 @@ class WindowsScrollDriver:
 
     def at_edge(self, axis, direction):
         self._check()
+        if getattr(self, "_excel", None) is not None:
+            return self._excel.at_edge(axis, direction)
         handle = self.scroll_handles.get(axis)
         info = self._scroll_info(handle, axis) if handle else None
         if info is None:
@@ -215,6 +230,10 @@ class WindowsScrollDriver:
 
     def scroll(self, axis, direction, units):
         self._check()
+        if getattr(self, "_excel", None) is not None:
+            self._excel.scroll(axis, direction, units)
+            self._scroll_time = time.monotonic()
+            return
         win32api.SetCursorPos(self.pointer)
         # Refresh the native hit test before posting wheel input. Browser
         # content can change its input child after startup or navigation.
@@ -243,27 +262,46 @@ class WindowsScrollDriver:
                                  (delta & 0xffff) << 16, coordinates)
         self._scroll_time = time.monotonic()
 
+    def set_content_region(self, region):
+        self._content_region = region
+
+    def capture_bounds(self, axes):
+        return self._excel.capture_bounds(axes) if getattr(self, "_excel", None) is not None else None
+
+    def scroll_displacement(self, axis):
+        return self._excel.delta[axis] if getattr(self, "_excel", None) is not None else None
+
     def snapshot(self):
         self._check()
         previous = self._grab()
         started = time.monotonic()
         pending = self._scroll_time is not None
-        moved = pending and self._last_frame is not None and not frames_equal(self._last_frame, previous)
+        region = getattr(self, "_content_region", None)
+        content = lambda frame: frame.crop(region) if region is not None else frame
+        last_content = content(self._last_frame) if self._last_frame is not None else None
+        previous_content = content(previous)
+        moved = pending and last_content is not None and not frames_equal(last_content, previous_content)
         minimum = 0.10 if self._browser else 0.04
-        unchanged_wait = 0.25 if self._browser else 0.16
+        # Busy browser pages can dispatch/render wheel input well after 250 ms.
+        # Apply the extra grace only while no movement has appeared.
+        unchanged_wait = 0.65 if self._browser else 0.16
+        stable_samples = 4 if self._browser else 2
         stable = 0
         while time.monotonic() - started < 1.0:
             time.sleep(0.025)
             self._check()
             current = self._grab()
-            if pending and not moved and self._last_frame is not None:
-                moved = not frames_equal(self._last_frame, current)
-            stable = stable + 1 if render_stable(previous, current) else 0
+            current_content = content(current)
+            if pending and not moved and last_content is not None:
+                moved = not frames_equal(last_content, current_content)
+            stable = stable + 1 if render_stable(previous_content, current_content) else 0
             age = time.monotonic() - (self._scroll_time if pending else started)
-            if stable >= 2 and age >= minimum and (not pending or moved or age >= unchanged_wait):
+            waited = time.monotonic() - started
+            if stable >= stable_samples and age >= minimum and (not pending or moved or waited >= unchanged_wait):
                 previous = current
                 break
             previous = current
+            previous_content = current_content
         self._scroll_time = None
         self._last_frame = previous
         return previous

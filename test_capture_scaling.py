@@ -88,3 +88,22 @@ class CaptureScalingTests(unittest.TestCase):
             self.assertIsNone(ImageChops.difference(result.convert("RGB"), image).getbbox())
         finally:
             result.close()
+
+    def test_window_frame_and_content_share_the_pixel_budget_and_disk_backing(self):
+        document = patterned_image(240, 1100)
+        engine = ScrollingCapture(FakeScrollDriver(document), max_pixels=1000,
+                                  max_output_pixels=80_000, include_window_frame=True)
+        result = engine.capture()
+        try:
+            self.assertTrue(hasattr(result, "_capture_backing"))
+            self.assertLessEqual(result.width * result.height, 80_000)
+            self.assertEqual(result.info["capture_original_size"], (272, 1164))
+            left, top, right, bottom = result.info["capture_content_box"]
+            self.assertGreater(top, 0)
+            self.assertLessEqual(right, result.width)
+            self.assertLessEqual(bottom, result.height)
+            self.assertEqual(result.convert("RGB").getpixel((0, 0)), (23, 36, 59))
+            blue = result.crop((left + 3, top + 3, right - 3, bottom - 3)).getchannel("B")
+            self.assertEqual(blue.getextrema(), (70, 70))
+        finally:
+            result.close()

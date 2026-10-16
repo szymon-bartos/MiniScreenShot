@@ -1,12 +1,20 @@
-# MiniScreenShot v1.1.5
+# MiniScreenShot v1.1.6
 
-Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.5.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.5\MiniScreenShot_v1.1.5.exe`. Python nie jest wymagany do korzystania z gotowego programu.
+Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.6.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.6\MiniScreenShot_v1.1.6.exe`. Python nie jest wymagany do korzystania z gotowego programu.
 
 Aplikacja obsługuje przechwytywanie ekranu i przewijanej zawartości, przycinanie oraz oznaczanie obrazu ołówkiem i półprzezroczystym mazakiem. Duże zrzuty z przewijaniem są proporcjonalnie zmniejszane do około 24 megapikseli lub mniej. Mniejsze zrzuty zachowują pełną rozdzielczość.
 
 Przykład: strona 2736 × 26 000 px (71,1 MP) daje obraz 1539 × 14 625 px (22,5 MP), czyli około 68% mniej pikseli. Cała zawartość trafia do jednego PNG. Przy dużym powiększeniu podgląd renderuje tylko widoczną część obrazu. Jeśli strona przestanie się przewijać, zmieni treść lub osiągnie limit kroków, program zachowuje uzyskany fragment i wyraźnie oznacza podgląd jako „Zrzut częściowy”. [Testy i pomiary](build/scroll-performance/README.md).
 
 Przechwytywanie i dopasowywanie fragmentów nadal odbywa się w jednym przejściu. Każdy pobrany fragment jest od razu zachowywany, a wielkość kroku dostosowuje się podczas pracy. Po dotarciu do końca program składa zapisane fragmenty bez ponownego przewijania strony. Dopasowywanie korzysta z klatek w oryginalnej rozdzielczości; zmniejszane są fragmenty przechowywane do składania i końcowy obraz.
+
+Górny pasek aplikacji jest zachowywany jeden raz nad połączoną zawartością. Nieruchome boczne elementy i dolny pasek również są umieszczane raz. Limit około 24 MP obejmuje cały wynik, łącznie z paskami. Wąski panel pod punktem przewijania jest analizowany osobno od nieruchomego otoczenia. Pierwsze kroki są małe, aby ustalić przesunięcie; przeglądarka dostaje dodatkowy czas tylko wtedy, gdy jeszcze nie pokazała ruchu. Jeśli żaden fragment się nie przesunął, podgląd informuje „Widoczny obszar”, zamiast sugerować pełny zrzut.
+
+## Microsoft Excel
+
+Wybierz okno desktopowego Excela i kierunki przewijania. Program łączy się z modelem obiektowym wybranego okna przez [mechanizm dostępności Office](https://learn.microsoft.com/en-us/windows/win32/api/oleacc/nf-oleacc-accessibleobjectfromwindow). Odczytuje granice wartości w aktywnym arkuszu za pomocą [Range.Find](https://learn.microsoft.com/en-us/office/vba/api/excel.range.find), po czym przewija wyłącznie do ostatniego wiersza lub kolumny danych. Nie otwiera innych plików ani nie zapisuje zmian w skoroszycie. Puste sformatowane komórki i formuły wyświetlające pusty tekst nie wydłużają zrzutu; puste przerwy między danymi pozostają w obrazie. Wstążka jest zachowywana raz.
+
+Przed przechwytywaniem zakończ edycję komórki i zamknij okna dialogowe Excela. Zmiana aktywnego arkusza lub przełączenie do innej aplikacji przerywa zrzut. Excel w przeglądarce i inne programy arkuszowe korzystają z ogólnego mechanizmu obrazu; opisane granice danych dotyczą desktopowego Microsoft Excel.
 
 Przewijanie porównuje podobieństwo fragmentów zamiast wymagać identycznych pikseli, toleruje drobne zmiany wyglądu i mierzy rzeczywiste przesunięcie podczas składania. Doładowanie zawartości lub zmiana prędkości przewijania nie powoduje automatycznego odrzucenia zrzutu. Jeśli ponowne pobranie klatki nie daje pewnego dopasowania, ale obraz nadal pasuje do wcześniejszego przesunięcia, program dopuszcza niewielką zakładkę. Informuje wtedy o tym w panelu postępu i statusie końcowym.
 
@@ -60,9 +68,9 @@ Zdarzenia przewijania trafiają do zawartości wybranego okna, aby pasek adresu 
 
 1. Zainstaluj Python 3.11+ z obsługą Tkinter i zaznacz „Add Python to PATH”.
 2. Uruchom `start_app.bat`, aby uruchomić program z kodu.
-3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.4.exe`.
+3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.6\MiniScreenShot_v1.1.6.exe` i paczkę `dist\MiniScreenShot_v1.1.6_windows.zip`.
 
-Budowanie korzysta z `MiniScreenShot_v1.1.4.spec`. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są rozpakowywane i dołączane do EXE. Program pozostaje jednym plikiem wykonywalnym.
+Budowanie korzysta z `MiniScreenShot_v1.1.6.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
 
 ## Cache i diagnostyka
 
@@ -88,7 +96,9 @@ Testy rysowania sprawdzają krycie ołówka, czytelność tekstu pod mazakiem i 
 
 Test rzeczywistego przechwytywania Windows: `python -m unittest test_scroll_live -v`. Wybiera okno z syntetyczną zawartością w głównym panelu i uruchamia zrzut jego przyciskiem, także przy otwartym wcześniejszym podglądzie. Sprawdza zwykły zrzut oraz przewijanie w obu kierunkach, porównując wynik z oryginałem piksel po pikselu. Porównuje również bezpośredni odczyt obszaru z Pillow i sprawdza zwalnianie zasobów GDI.
 
-Test Firefoksa: `python -m unittest test_scroll_browser -v`. Otwiera lokalną stronę w oddzielnym profilu w `build\browser-review`, sprawdza pełny zrzut przy płynnym przewijaniu oraz brak loadera na obrazie. Nie korzysta z prywatnego profilu użytkownika.
+Test Firefoksa: `python -m unittest test_scroll_browser -v`. Otwiera lokalne strony w oddzielnym profilu w `build\browser-review`, sprawdza pełny zrzut przy płynnym przewijaniu, wąski panel CRM w nieruchomym interfejsie oraz brak loadera na obrazie. Nie korzysta z prywatnego profilu użytkownika.
+
+Test Excela: `python -m unittest test_excel_scroll -v`. Tworzy osobną instancję i testowy skoroszyt: 85 wierszy z pustą przerwą, formatowanie do wiersza 40 000, inny arkusz z danymi do wiersza 5000 oraz tabelę 30 kolumn. Sprawdza koniec na danych aktywnego arkusza i zachowanie wstążki. Zamyka wyłącznie własny skoroszyt bez zapisu.
 
 Test dużej strony: `python -m unittest test_scroll_large -v`. Sprawdza proporcjonalne zmniejszenie źródłowych 71,1 MP do 22,5 MP, fragmenty z całej wysokości strony, brak drugiego przebiegu i zapis jednego PNG. Wymaga kilkuset MB wolnego miejsca na pliki robocze. `test_capture_scaling` sprawdza również zmianę skali podczas pracy, brak pustych pasów na łączeniach, pion, poziom i siatkę oraz zachowanie oryginalnych pikseli małych zrzutów.
 

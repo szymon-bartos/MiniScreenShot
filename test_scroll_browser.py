@@ -55,6 +55,17 @@ class FirefoxCaptureTests(unittest.TestCase):
                         f'<script>onload=onscroll=()=>{{document.title={json.dumps(title)}+" HTML height="+Math.ceil(document.body.getBoundingClientRect().height*devicePixelRatio)+" y="+scrollY}};'
                         'let frame=0;setInterval(()=>document.body.style.filter="brightness("+(++frame%2?1.035:0.975)+")",350)</script>')
         (folder / "natural.html").write_text(natural_html, encoding="utf-8")
+        crm_document = document_image(160, 1600)
+        crm_document.save(folder / "crm-document.png")
+        (folder / "crm.html").write_text(
+            f'<!doctype html><title>{title} CRM</title><style>'
+            'html,body{margin:0;overflow:hidden;width:100%;height:100%}'
+            'body{background:url(document.png) center/cover}'
+            '#panel{position:fixed;top:30px;left:50%;transform:translateX(-50%);'
+            'width:160px;height:520px;overflow:auto;scrollbar-width:none;scroll-behavior:smooth}'
+            'img{display:block}</style><div id="panel"><img src="crm-document.png" width="160" height="1600"></div>'
+            f'<script>let panel=document.getElementById("panel");onload=panel.onscroll=()=>'
+            f'{{document.title={json.dumps(title)}+" CRM y="+panel.scrollTop}};</script>', encoding="utf-8")
         process = subprocess.Popen([str(FIREFOX), "-no-remote", "-profile", str(profile.resolve()),
                                     "-width", "980", "-height", "760", (folder / "index.html").resolve().as_uri()],
                                    creationflags=subprocess.CREATE_NO_WINDOW)
@@ -129,6 +140,28 @@ class FirefoxCaptureTests(unittest.TestCase):
                                     ((natural.width // 4, natural.height - 18, natural.width * 3 // 4, natural.height - 2), (1, 222, 244))):
                     mean = ImageStat.Stat(natural.crop(box)).mean
                     self.assertLess(max(abs(a - b) for a, b in zip(mean, color)), 15, "Top or bottom marker is missing")
+                # A real CRM-like inner panel: most of the surrounding image
+                # remains textured and fixed while the small central panel moves.
+                pyautogui.hotkey("ctrl", "l")
+                pyautogui.write((folder / "crm.html").resolve().as_uri(), interval=0.001)
+                pyautogui.press("enter")
+                deadline = time.monotonic() + 10
+                while "CRM y=" not in window.title and time.monotonic() < deadline:
+                    time.sleep(0.1)
+                self.assertIn("CRM y=", window.title, "Local CRM fixture did not load")
+                time.sleep(0.25)
+                driver.close()
+                driver = WindowsScrollDriver(window)
+                driver.pulse, driver.frame_guard = loader.pump, loader.capture_frame
+                crm_engine = ScrollingCapture(driver, progress=loader.set_message, include_window_frame=True)
+                crm_result = crm_engine.capture()
+                crm_result.save(folder / "crm-full-panel.png")
+                self.assertIsNone(crm_engine.incomplete_reason)
+                self.assertGreater(crm_engine.frame_count, 1)
+                content = crm_result.crop(crm_result.info["capture_content_box"])
+                self.assertEqual(content.size, crm_document.size)
+                self.assertIsNone(ImageChops.difference(content, crm_document).getbbox(), "CRM rows were missed or duplicated")
+                self.assertGreater(crm_result.info["capture_content_box"][1], 60, "Browser toolbar was cropped")
         finally:
             if loader:
                 loader.close()
