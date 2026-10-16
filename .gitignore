@@ -16,17 +16,15 @@ dist/
 *.zip
 *.7z
 
-# Keep build helpers and small benchmark reports, exclude generated runtimes,
-# browser profiles, temporary frames and screenshots.
+# Keep only maintained build/test helpers and their documentation.
 build/*
-!build/*.py
+!build/prepare_icon.py
+!build/smoke_exe.py
+!build/scroll_fixture.py
+!build/benchmark_scroll.py
 !build/scroll-performance/
 build/scroll-performance/*
-!build/scroll-performance/*.md
-!build/scroll-performance/*.json
-!build/scroll-performance/baseline/
-build/scroll-performance/baseline/*
-!build/scroll-performance/baseline/*.py
+!build/scroll-performance/README.md
 
 # Machine-specific settings and credentials
 .env

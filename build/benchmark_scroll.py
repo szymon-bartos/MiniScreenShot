@@ -12,11 +12,8 @@ sys.path.insert(0, str(workspace))
 parser = argparse.ArgumentParser()
 parser.add_argument("--label", required=True)
 parser.add_argument("--browser", action="store_true")
-parser.add_argument("--baseline", action="store_true")
 arguments = parser.parse_args()
 destination = workspace / "build" / "scroll-performance"
-if arguments.baseline:
-    sys.path.insert(0, str(destination / "baseline"))
 
 import scroll_capture
 import windows_scroll
@@ -38,8 +35,6 @@ def measure(owner, name, label):
 for method in ("_grab", "snapshot", "scroll"):
     measure(windows_scroll.WindowsScrollDriver, method, method)
 measure(scroll_capture, "estimate_shift", "registration")
-if hasattr(scroll_capture.ScrollingCapture, "_measure_axis"):
-    measure(scroll_capture.ScrollingCapture, "_measure_axis", "boundary_scan")
 measure(scroll_capture.ScrollingCapture, "_seek_start", "seek_start")
 measure(scroll_capture.ScrollingCapture, "capture", "capture")
 test_name = ("test_scroll_browser.FirefoxCaptureTests.test_full_page_with_smooth_scrolling_and_loader" if arguments.browser

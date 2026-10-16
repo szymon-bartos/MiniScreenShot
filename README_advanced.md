@@ -1,6 +1,8 @@
-# MiniScreenShot v1.1.2
+# MiniScreenShot v1.1.3
 
-Przenośny program do zrzutów ekranu na Windows. Gotowy plik uruchomisz z `dist\MiniScreenShot_v1.1.2.exe`, bez instalowania Pythona.
+Przenośny program do zrzutów ekranu na Windows. Gotowy plik uruchomisz z `dist\MiniScreenShot_v1.1.3.exe`, bez instalowania Pythona.
+
+Wersja 1.1.3 usuwa przestarzałe warianty programu, zależność Playwright oraz dawne pliki kompilacji i diagnostyki. Projekt zachowuje bieżącą wersję i cztery poprzednie: 1.1.3, 1.1.2, 1.1.1, 1.0.14 i 1.0.13. Pliki testowe i zasoby wymagane do budowania pozostają dostępne.
 
 Wersja 1.1.2 usuwa podpowiedź przy przycisku „Informacje” i dodatkowe odświeżanie okien ze stopki. Autor i licencja są dostępne po kliknięciu „Informacje”; odświeżanie pozostaje przy liście okien.
 
@@ -68,9 +70,9 @@ Zdarzenia przewijania trafiają do zawartości wybranego okna, aby pasek adresu 
 
 1. Zainstaluj Python 3.11+ z obsługą Tkinter i zaznacz „Add Python to PATH”.
 2. Uruchom `start_app.bat`, aby uruchomić program z kodu.
-3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.2.exe`.
+3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.3.exe`.
 
-Budowanie korzysta z `MiniScreenShot_v1.1.2.spec`. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są rozpakowywane i dołączane do EXE. Program pozostaje jednym plikiem wykonywalnym.
+Budowanie korzysta z `MiniScreenShot_v1.1.3.spec`. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są rozpakowywane i dołączane do EXE. Program pozostaje jednym plikiem wykonywalnym.
 
 ## Sprawdzenie zmian
 

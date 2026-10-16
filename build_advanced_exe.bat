@@ -17,7 +17,7 @@ if not exist ".venv\Scripts\python.exe" (
 call .venv\Scripts\activate.bat
 python -m pip install --upgrade pip
 python -m pip install pillow pyinstaller pyautogui pygetwindow pywin32
-python -m PyInstaller --noconfirm MiniScreenShot_v1.1.2.spec
+python -m PyInstaller --noconfirm MiniScreenShot_v1.1.3.spec
 if errorlevel 1 exit /b 1
 copy /y LICENSE.txt dist\LICENSE.txt >nul
 if errorlevel 1 exit /b 1
@@ -25,8 +25,8 @@ if errorlevel 1 exit /b 1
 echo.
 echo Gotowy plik EXE znajduje sie w katalogu dist
 echo.
-if exist "dist\MiniScreenShot_v1.1.2.exe" (
-    echo Znalazlem: dist\MiniScreenShot_v1.1.2.exe
+if exist "dist\MiniScreenShot_v1.1.3.exe" (
+    echo Znalazlem: dist\MiniScreenShot_v1.1.3.exe
 ) else (
     echo Nie znaleziono pliku EXE. Sprawdz kompilacje.
 )

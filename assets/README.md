@@ -6,7 +6,7 @@ Niebiesko-turkusowe narożniki kadru, góry, słońce i jasny kursor, na podstaw
 - [capture-frame.ico](capture-frame.ico): ikona Windows w rozmiarach 16, 20, 24, 32, 40, 48, 64, 96, 128 i 256 px.
 - `../build/prepare_icon.py`: konwersja PNG do ICO, bez retuszu.
 
-Tło usunięto wbudowanym narzędziem **imagegen**, w trybie edycji przesłanego obrazu. Wspólne zasoby są wykorzystywane w EXE, paskach tytułu i zadań oraz nagłówkach głównego okna i podglądu. Starsze grafiki `monitor-grab`, `monitor-hand` i `monitor-paw` zachowano jako poprzednie warianty.
+Tło usunięto wbudowanym narzędziem **imagegen**, w trybie edycji przesłanego obrazu. Wspólne zasoby są wykorzystywane w EXE, paskach tytułu i zadań oraz nagłówkach głównego okna i podglądu. Grafikę `monitor-grab` zachowano wyłącznie na potrzeby specyfikacji pozostawionej wersji 1.0.13; nieużywane warianty `monitor-hand` i `monitor-paw` usunięto.
 
 ## Prompt usunięcia tła
 
