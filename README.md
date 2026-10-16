@@ -1,4 +1,4 @@
-# MiniScreenShot 1.1.3
+# MiniScreenShot 1.1.4
 
 <img src="assets/capture-frame.png" alt="Logo MiniScreenShot" width="112">
 
@@ -6,7 +6,9 @@ Przenośna aplikacja do zrzutów ekranu dla Windows. Stworzone przez Szymona Bar
 
 ## Pobieranie
 
-Gotowy program znajduje się w [wydaniach GitHub](https://github.com/szymon-bartos/MiniScreenShot/releases/latest). Pobierz `MiniScreenShot_v1.1.3.exe` i uruchom — bez instalowania Pythona. Warunki korzystania znajdziesz w [LICENSE.txt](LICENSE.txt) oraz w aplikacji pod przyciskiem „Informacje”.
+**[Pobierz MiniScreenShot dla Windows](https://github.com/szymon-bartos/MiniScreenShot/releases/download/v1.1.4/MiniScreenShot_v1.1.4.exe)**
+
+Pobierz plik EXE i uruchom — bez instalowania Pythona. Wszystkie opublikowane wersje są dostępne w [wydaniach GitHub](https://github.com/szymon-bartos/MiniScreenShot/releases). Warunki korzystania znajdziesz w [LICENSE.txt](LICENSE.txt) oraz w aplikacji pod przyciskiem „Informacje”.
 
 ## Funkcje
 
@@ -18,18 +20,14 @@ Gotowy program znajduje się w [wydaniach GitHub](https://github.com/szymon-bart
 - Zapis PNG i kopiowanie obrazu do schowka.
 - Wybór okna i odświeżanie jego listy bezpośrednio w głównym panelu.
 
-Wersja 1.1.3 porządkuje projekt i usuwa nieużywane warianty programu, dawne zasoby oraz pliki robocze. Przycisk „Informacje” działa po kliknięciu. Stopka zawiera „Diagnostyka” i „Informacje”; odświeżanie pozostaje przy liście okien.
-
 ## Uruchomienie z kodu i budowanie
 
 Wymagany jest Windows oraz Python 3.11 lub nowszy z Tkinterem.
 
 1. Uruchom `start_app.bat`, aby uruchomić aplikację z kodu.
-2. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.3.exe`. Skrypt przygotowuje środowisko i instaluje zależności.
+2. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.4.exe`. Skrypt przygotowuje środowisko i instaluje zależności.
 
 Głównym plikiem aplikacji jest `app_advanced.py`. Szczegółowa obsługa, ograniczenia przewijania i polecenia sprawdzające są opisane w [README_advanced.md](README_advanced.md).
-
-Każda opublikowana zmiana otrzymuje nowy numer wersji i osobny plik EXE. Przed publikacją projekt jest czyszczony; zachowujemy bieżącą wersję i cztery poprzednie: 1.1.3, 1.1.2, 1.1.1, 1.0.14 i 1.0.13. Pliki robocze, lokalne zrzuty, logi i profile przeglądarek są pomijane w repozytorium.
 
 ## Licencja
 

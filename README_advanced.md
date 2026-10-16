@@ -1,22 +1,12 @@
-# MiniScreenShot v1.1.3
+# MiniScreenShot v1.1.4
 
-Przenośny program do zrzutów ekranu na Windows. Gotowy plik uruchomisz z `dist\MiniScreenShot_v1.1.3.exe`, bez instalowania Pythona.
+Przenośny program do zrzutów ekranu na Windows. Gotowy plik uruchomisz z `dist\MiniScreenShot_v1.1.4.exe`, bez instalowania Pythona.
 
-Wersja 1.1.3 usuwa przestarzałe warianty programu, zależność Playwright oraz dawne pliki kompilacji i diagnostyki. Projekt zachowuje bieżącą wersję i cztery poprzednie: 1.1.3, 1.1.2, 1.1.1, 1.0.14 i 1.0.13. Pliki testowe i zasoby wymagane do budowania pozostają dostępne.
-
-Wersja 1.1.2 usuwa podpowiedź przy przycisku „Informacje” i dodatkowe odświeżanie okien ze stopki. Autor i licencja są dostępne po kliknięciu „Informacje”; odświeżanie pozostaje przy liście okien.
-
-Wersja 1.1.1 dodaje ołówek i półprzezroczysty mazak bezpośrednio w podglądzie zrzutu. Oba narzędzia mają wybór koloru i grubości kreski. Oznaczenia są uwzględniane w PNG i schowku; przycisk „Cofnij” lub Ctrl+Z usuwa ostatnią kreskę. Przechowywane są zmienione fragmenty obrazu zamiast pełnej kopii zrzutu dla każdego ruchu.
-
-Wersja 1.0.14 dodaje przewijanie podglądu strzałkami, kółkiem i gestem dwóch palców na touchpadzie, w pionie i poziomie. Obsługuje małe przesunięcia precyzyjnych touchpadów Windows. Powiększanie jest teraz dostępne przez Ctrl + kółko, suwak i przyciski. Nowe logo pochodzi z grafiki użytkownika, z usuniętym tłem.
-
-Wersja 1.0.13 automatycznie zmniejsza duże zrzuty z przewijaniem do około 24 megapikseli lub mniej, zachowując proporcje i całą przechwyconą zawartość. Mniejsze zrzuty pozostają w pełnej rozdzielczości. Skalowanie jest dobierane podczas przechwytywania, a kolejne fragmenty są już przechowywane w mniejszej rozdzielczości, aby ograniczyć pamięć i pliki robocze. Podgląd pokazuje zastosowany procent rozdzielczości i korzysta z obrazu bez dodatkowej pełnej kopii.
+Aplikacja obsługuje przechwytywanie ekranu i przewijanej zawartości, przycinanie oraz oznaczanie obrazu ołówkiem i półprzezroczystym mazakiem. Duże zrzuty z przewijaniem są proporcjonalnie zmniejszane do około 24 megapikseli lub mniej. Mniejsze zrzuty zachowują pełną rozdzielczość.
 
 Przykład: strona 2736 × 26 000 px (71,1 MP) daje obraz 1539 × 14 625 px (22,5 MP), czyli około 68% mniej pikseli. Cała zawartość trafia do jednego PNG. Przy dużym powiększeniu podgląd renderuje tylko widoczną część obrazu. Jeśli strona przestanie się przewijać, zmieni treść lub osiągnie limit kroków, program zachowuje uzyskany fragment i wyraźnie oznacza podgląd jako „Zrzut częściowy”. [Testy i pomiary](build/scroll-performance/README.md).
 
 Przechwytywanie i dopasowywanie fragmentów nadal odbywa się w jednym przejściu. Każdy pobrany fragment jest od razu zachowywany, a wielkość kroku dostosowuje się podczas pracy. Po dotarciu do końca program składa zapisane fragmenty bez ponownego przewijania strony. Dopasowywanie korzysta z klatek w oryginalnej rozdzielczości; zmniejszane są fragmenty przechowywane do składania i końcowy obraz.
-
-Program korzysta ze wspólnej niebiesko-turkusowej ikony kadru, obrazu i kursora, bez tła. Pliki i prompty edycji są opisane w [assets/README.md](assets/README.md).
 
 Przewijanie porównuje podobieństwo fragmentów zamiast wymagać identycznych pikseli, toleruje drobne zmiany wyglądu i mierzy rzeczywiste przesunięcie podczas składania. Doładowanie zawartości lub zmiana prędkości przewijania nie powoduje automatycznego odrzucenia zrzutu. Jeśli ponowne pobranie klatki nie daje pewnego dopasowania, ale obraz nadal pasuje do wcześniejszego przesunięcia, program dopuszcza niewielką zakładkę. Informuje wtedy o tym w panelu postępu i statusie końcowym.
 
@@ -70,9 +60,9 @@ Zdarzenia przewijania trafiają do zawartości wybranego okna, aby pasek adresu 
 
 1. Zainstaluj Python 3.11+ z obsługą Tkinter i zaznacz „Add Python to PATH”.
 2. Uruchom `start_app.bat`, aby uruchomić program z kodu.
-3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.3.exe`.
+3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.4.exe`.
 
-Budowanie korzysta z `MiniScreenShot_v1.1.3.spec`. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są rozpakowywane i dołączane do EXE. Program pozostaje jednym plikiem wykonywalnym.
+Budowanie korzysta z `MiniScreenShot_v1.1.4.spec`. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są rozpakowywane i dołączane do EXE. Program pozostaje jednym plikiem wykonywalnym.
 
 ## Sprawdzenie zmian
 
