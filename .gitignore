@@ -1,0 +1,45 @@
+# Python and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local captures, logs, executable builds and archives
+captures/
+Screenshots/
+dist/
+*.log
+*.exe
+*.zip
+*.7z
+
+# Keep build helpers and small benchmark reports, exclude generated runtimes,
+# browser profiles, temporary frames and screenshots.
+build/*
+!build/*.py
+!build/scroll-performance/
+build/scroll-performance/*
+!build/scroll-performance/*.md
+!build/scroll-performance/*.json
+!build/scroll-performance/baseline/
+build/scroll-performance/baseline/*
+!build/scroll-performance/baseline/*.py
+
+# Machine-specific settings and credentials
+.env
+.env.*
+!.env.example
+.codex/
+.agents/
+.aws/
+.vscode/
+.idea/
+*.pem
+*.key
+*.pfx
+*.p12
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,32 @@
+{
+  "label": "single-pass-native",
+  "test": "test_scroll_live.LiveScrollTests.test_main_button_captures_two_axis_document_without_repeated_pixels",
+  "success": true,
+  "total_seconds": 19.558020800352097,
+  "measurements": {
+    "_grab": {
+      "calls": 226,
+      "seconds": 4.322723587974906
+    },
+    "snapshot": {
+      "calls": 62,
+      "seconds": 9.842383205890656
+    },
+    "scroll": {
+      "calls": 61,
+      "seconds": 0.13101108931005
+    },
+    "seek_start": {
+      "calls": 8,
+      "seconds": 3.8125212006270885
+    },
+    "registration": {
+      "calls": 18,
+      "seconds": 1.0900698974728584
+    },
+    "capture": {
+      "calls": 1,
+      "seconds": 12.648467099294066
+    }
+  }
+}

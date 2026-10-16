@@ -1,0 +1,36 @@
+{
+  "label": "optimized-native",
+  "test": "test_scroll_live.LiveScrollTests.test_main_button_captures_two_axis_document_without_repeated_pixels",
+  "success": true,
+  "total_seconds": 15.764877701178193,
+  "measurements": {
+    "_grab": {
+      "calls": 251,
+      "seconds": 4.90054308436811
+    },
+    "snapshot": {
+      "calls": 70,
+      "seconds": 11.084217691794038
+    },
+    "scroll": {
+      "calls": 68,
+      "seconds": 0.016209399327635765
+    },
+    "seek_start": {
+      "calls": 11,
+      "seconds": 5.307174101471901
+    },
+    "registration": {
+      "calls": 22,
+      "seconds": 0.4957634974271059
+    },
+    "boundary_scan": {
+      "calls": 2,
+      "seconds": 3.080945400521159
+    },
+    "capture": {
+      "calls": 1,
+      "seconds": 12.332003401592374
+    }
+  }
+}

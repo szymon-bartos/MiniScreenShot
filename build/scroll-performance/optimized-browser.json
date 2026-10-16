@@ -1,0 +1,36 @@
+{
+  "label": "optimized-browser",
+  "test": "test_scroll_browser.FirefoxCaptureTests.test_full_page_with_smooth_scrolling_and_loader",
+  "success": true,
+  "total_seconds": 27.148067699745297,
+  "measurements": {
+    "_grab": {
+      "calls": 194,
+      "seconds": 5.538491802290082
+    },
+    "snapshot": {
+      "calls": 50,
+      "seconds": 13.345590990036726
+    },
+    "scroll": {
+      "calls": 44,
+      "seconds": 0.005925200879573822
+    },
+    "seek_start": {
+      "calls": 6,
+      "seconds": 6.339058501645923
+    },
+    "registration": {
+      "calls": 16,
+      "seconds": 2.7129868995398283
+    },
+    "boundary_scan": {
+      "calls": 2,
+      "seconds": 6.951410098001361
+    },
+    "capture": {
+      "calls": 2,
+      "seconds": 16.671685500070453
+    }
+  }
+}
