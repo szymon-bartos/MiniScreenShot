@@ -14,6 +14,24 @@ def document_image(width, height):
     return Image.frombytes("RGB", (width, height), randomizer.randbytes(width * height * 3))
 
 
+def lead_table_image(width=720, rows=48, row_height=28):
+    """Mostly identical grid cells; only lead identifiers change between rows."""
+    document = Image.new("RGB", (width, rows * row_height), "white")
+    draw = ImageDraw.Draw(document)
+    for row in range(rows):
+        y = row * row_height
+        draw.line((0, y + row_height - 1, width, y + row_height - 1), fill="#d1d5db")
+        draw.text((12, y + 7), f"LEAD {row:04d}", fill="#17243b")
+        draw.text((190, y + 7), "Nowy kontakt", fill="#17243b")
+        draw.text((400, y + 7), "Oczekuje", fill="#17243b")
+        draw.text((610, y + 7), f"ID {row * 173 + 41:05d}", fill="#17243b")
+    for x in (175, 385, 595):
+        draw.line((x, 0, x, document.height), fill="#d1d5db")
+    draw.rectangle((0, 0, width - 1, 1), fill="#f20179")
+    draw.rectangle((0, document.height - 2, width - 1, document.height - 1), fill="#01def4")
+    return document
+
+
 class FakeScrollDriver:
     def __init__(self, document, viewport=(240, 180), position=(0, 0), native=True, blink=False):
         self.document, self.viewport = document, viewport
@@ -95,6 +113,41 @@ class ScrollCaptureTests(unittest.TestCase):
         self.assertIsNone(engine.incomplete_reason)
         self.assertGreater(engine.frame_count, 1)
         self.assert_same_image(result, document)
+
+    def test_sparse_erp_lead_table_is_captured_when_panel_is_below_window_center(self):
+        document = lead_table_image()
+        driver = FakeScrollDriver(document, viewport=(720, 224), native=False)
+        fixed = document_image(1100, 760)
+        def snapshot():
+            driver.snapshots += 1
+            frame = fixed.copy()
+            frame.paste(document.crop((0, driver.y, 720, driver.y + 224)), (300, 440))
+            return frame
+        driver.snapshot = snapshot
+        engine = ScrollingCapture(driver)
+        result = engine.capture()
+        self.assertIsNone(engine.incomplete_reason)
+        self.assertGreater(engine.frame_count, 1)
+        self.assert_same_image(result, document)
+
+    def test_sparse_erp_rows_are_not_confused_with_unchanged_grid(self):
+        document = lead_table_image()
+        first = document.crop((0, 56, 720, 392))
+        second = document.crop((0, 140, 720, 476))
+        self.assertEqual(estimate_shift(first, second, "y"), 84)
+        self.assertEqual(estimate_shift(first, first, "y"), 0)
+
+    def test_seek_start_does_not_stop_on_nonoverlapping_inner_panel_pages(self):
+        document = document_image(50, 12000)
+        driver = FakeScrollDriver(document, viewport=(50, 400), position=(0, 9000), native=False)
+        fixed = document_image(900, 600)
+        def snapshot():
+            frame = fixed.copy()
+            frame.paste(document.crop((0, driver.y, 50, driver.y + 400)), (425, 100))
+            return frame
+        driver.snapshot = snapshot
+        ScrollingCapture(driver)._seek_start("y")
+        self.assertEqual(driver.y, 0)
 
     def test_window_toolbar_is_kept_once_above_complete_content(self):
         document = document_image(240, 509)

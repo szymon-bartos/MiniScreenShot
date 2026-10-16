@@ -1,6 +1,6 @@
-# MiniScreenShot v1.1.6
+# MiniScreenShot v1.1.7
 
-Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.6.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.6\MiniScreenShot_v1.1.6.exe`. Python nie jest wymagany do korzystania z gotowego programu.
+Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.7.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.7\MiniScreenShot_v1.1.7.exe`. Python nie jest wymagany do korzystania z gotowego programu.
 
 Aplikacja obsługuje przechwytywanie ekranu i przewijanej zawartości, przycinanie oraz oznaczanie obrazu ołówkiem i półprzezroczystym mazakiem. Duże zrzuty z przewijaniem są proporcjonalnie zmniejszane do około 24 megapikseli lub mniej. Mniejsze zrzuty zachowują pełną rozdzielczość.
 
@@ -9,6 +9,8 @@ Przykład: strona 2736 × 26 000 px (71,1 MP) daje obraz 1539 × 14 625 px (
 Przechwytywanie i dopasowywanie fragmentów nadal odbywa się w jednym przejściu. Każdy pobrany fragment jest od razu zachowywany, a wielkość kroku dostosowuje się podczas pracy. Po dotarciu do końca program składa zapisane fragmenty bez ponownego przewijania strony. Dopasowywanie korzysta z klatek w oryginalnej rozdzielczości; zmniejszane są fragmenty przechowywane do składania i końcowy obraz.
 
 Górny pasek aplikacji jest zachowywany jeden raz nad połączoną zawartością. Nieruchome boczne elementy i dolny pasek również są umieszczane raz. Limit około 24 MP obejmuje cały wynik, łącznie z paskami. Wąski panel pod punktem przewijania jest analizowany osobno od nieruchomego otoczenia. Pierwsze kroki są małe, aby ustalić przesunięcie; przeglądarka dostaje dodatkowy czas tylko wtedy, gdy jeszcze nie pokazała ruchu. Jeśli żaden fragment się nie przesunął, podgląd informuje „Widoczny obszar”, zamiast sugerować pełny zrzut.
+
+W powtarzalnych tabelach ERP nieruchoma siatka i jednakowe etykiety nie przesłaniają zmiany rekordów: dopasowanie uwzględnia zmieniające się fragmenty wierszy. Panel nie musi zajmować środka okna w kierunku przewijania. Zmiana klatki bez wspólnego fragmentu podczas szukania początku listy nie jest traktowana jako osiągnięcie jej granicy. Oczekiwanie na koniec renderowania również analizuje przewijany fragment, aby drobny tekst nie został uznany za zakończoną animację.
 
 ## Microsoft Excel
 
@@ -68,9 +70,9 @@ Zdarzenia przewijania trafiają do zawartości wybranego okna, aby pasek adresu 
 
 1. Zainstaluj Python 3.11+ z obsługą Tkinter i zaznacz „Add Python to PATH”.
 2. Uruchom `start_app.bat`, aby uruchomić program z kodu.
-3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.6\MiniScreenShot_v1.1.6.exe` i paczkę `dist\MiniScreenShot_v1.1.6_windows.zip`.
+3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.7\MiniScreenShot_v1.1.7.exe` i paczkę `dist\MiniScreenShot_v1.1.7_windows.zip`.
 
-Budowanie korzysta z `MiniScreenShot_v1.1.6.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
+Budowanie korzysta z `MiniScreenShot_v1.1.7.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
 
 ## Cache i diagnostyka
 
@@ -97,6 +99,8 @@ Testy rysowania sprawdzają krycie ołówka, czytelność tekstu pod mazakiem i 
 Test rzeczywistego przechwytywania Windows: `python -m unittest test_scroll_live -v`. Wybiera okno z syntetyczną zawartością w głównym panelu i uruchamia zrzut jego przyciskiem, także przy otwartym wcześniejszym podglądzie. Sprawdza zwykły zrzut oraz przewijanie w obu kierunkach, porównując wynik z oryginałem piksel po pikselu. Porównuje również bezpośredni odczyt obszaru z Pillow i sprawdza zwalnianie zasobów GDI.
 
 Test Firefoksa: `python -m unittest test_scroll_browser -v`. Otwiera lokalne strony w oddzielnym profilu w `build\browser-review`, sprawdza pełny zrzut przy płynnym przewijaniu, wąski panel CRM w nieruchomym interfejsie oraz brak loadera na obrazie. Nie korzysta z prywatnego profilu użytkownika.
+
+Test Chrome: `python -m unittest test_scroll_chrome -v`. Używa osobnego profilu w `build\chrome-review` i syntetycznej tabeli 48 leadów, z powtarzalną siatką oraz zmieniającymi się identyfikatorami. Lista rysuje wyłącznie widoczne rekordy na canvasie. Test porównuje wszystkie piksele połączonej listy z oryginałem, także przy opóźnieniu renderowania 450 ms i rozpoczęciu od środka listy. Nie korzysta z profilu ani danych ERP użytkownika.
 
 Test Excela: `python -m unittest test_excel_scroll -v`. Tworzy osobną instancję i testowy skoroszyt: 85 wierszy z pustą przerwą, formatowanie do wiersza 40 000, inny arkusz z danymi do wiersza 5000 oraz tabelę 30 kolumn. Sprawdza koniec na danych aktywnego arkusza i zachowanie wstążki. Zamyka wyłącznie własny skoroszyt bez zapisu.
 

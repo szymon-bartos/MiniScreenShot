@@ -51,30 +51,44 @@ def motion_bounds(first, second):
     mask = diff.point([0] * 18 + [255] * 238)
     mask = mask.crop(box)
     row_threshold = max(1, math.ceil(255 * max(4, mask.width * 0.004) / mask.width))
-    column_threshold = max(1, math.ceil(255 * max(4, mask.height * 0.004) / mask.height))
     rows = [index for index, value in enumerate(mask.resize((1, mask.height), Image.Resampling.BOX).tobytes()) if value >= row_threshold]
-    columns = [index for index, value in enumerate(mask.resize((mask.width, 1), Image.Resampling.BOX).tobytes()) if value >= column_threshold]
-    return (columns[0] + box[0], rows[0] + box[1], columns[-1] + box[0] + 1, rows[-1] + box[1] + 1) if rows and columns else None
+    if not rows:
+        return None
+    # A thin translated separator can establish the entire table width even
+    # when its repeated cells differ only in a few identifier columns.
+    columns = mask.crop((0, rows[0], mask.width, rows[-1] + 1)).getbbox()
+    return (columns[0] + box[0], rows[0] + box[1], columns[2] + box[0], rows[-1] + box[1] + 1) if columns else None
 
 
-def _central_scroll_region(first, second, axis):
-    """A narrow panel under the wheel can move inside a mostly fixed CRM UI."""
+def scroll_motion_region(first, second, axis):
+    """Find motion along the wheel's column/row inside a fixed application UI."""
     box = motion_bounds(first, second)
     if box is None:
         return None
     left, top, right, bottom = box
-    if not (left <= first.width // 2 < right and top <= first.height // 2 < bottom):
+    centered = left <= first.width // 2 < right if axis == "y" else top <= first.height // 2 < bottom
+    if not centered:
         return None
     extent, across = ((bottom - top, right - left) if axis == "y" else (right - left, bottom - top))
     dimension = first.height if axis == "y" else first.width
-    return box if extent >= max(48, dimension * 0.35) and across >= 24 else None
+    return box if extent >= max(48, dimension * 0.15) and across >= 24 else None
 
 
 def scroll_frames_equal(first, second, axis, stable_ratio=0.8):
     if not frames_equal(first, second, stable_ratio):
         return False
-    box = _central_scroll_region(first, second, axis)
-    return box is None or frames_equal(first.crop(box), second.crop(box), stable_ratio)
+    box = scroll_motion_region(first, second, axis)
+    if box is None:
+        return True
+    # Repeated table cells can still look mostly equal inside their motion box.
+    # Check whether their changing identifiers actually translate before
+    # classifying the frame as stationary.
+    try:
+        return estimate_shift(first, second, axis) == 0
+    except ScrollCaptureError:
+        # Seeking backwards can jump farther than one viewport. A changed
+        # panel with no overlap is still new content, not an unchanged frame.
+        return False
 
 
 def _registration_score(first, second, distance):
@@ -127,13 +141,12 @@ def estimate_shift(first, second, axis, expected=None):
     """Find the positive content displacement, with pixel-level precision."""
     if first.size != second.size:
         raise ScrollCaptureError("Rozmiar przechwytywanego okna zmienił się podczas przewijania.")
-    if frames_equal(first, second):
-        box = _central_scroll_region(first, second, axis)
+    sparse_motion = frames_equal(first, second)
+    if sparse_motion:
+        box = scroll_motion_region(first, second, axis)
         if box is None:
             return 0
         first, second = first.crop(box), second.crop(box)
-        if frames_equal(first, second):
-            return 0
     if axis == "x":
         first, second = first.transpose(Image.Transpose.TRANSPOSE), second.transpose(Image.Transpose.TRANSPOSE)
     first, second = first.convert("L"), second.convert("L")
@@ -192,11 +205,17 @@ def estimate_shift(first, second, axis, expected=None):
         # a predicted wheel distance alone can duplicate the last short step.
         evidence = []
         margin = max(2, height // 20)
+        changed = ImageChops.difference(first, second).point([0] * 8 + [255] * 248)
         for item in [best, *equivalent]:
             distance = item[2]
             a = first.crop((0, margin + distance, first.width, height - margin))
             b = second.crop((0, margin, first.width, height - margin - distance))
-            score = ImageStat.Stat(ImageChops.difference(a, b)).mean[0]
+            mask = changed.crop((0, margin, first.width, height - margin - distance))
+            difference = ImageChops.difference(a, b)
+            # Stable grid lines and repeated labels must not outweigh the few
+            # changing lead identifiers that prove which rows actually moved.
+            score = (ImageStat.Stat(difference, mask).mean[0]
+                     if sparse_motion and mask.getbbox() else ImageStat.Stat(difference).mean[0])
             evidence.append((score, item))
         lowest = min(score for score, _ in evidence)
         plausible = [item for score, item in evidence if score <= lowest + 0.1]
@@ -308,7 +327,7 @@ class ScrollingCapture:
             measured = displacement(axis) if displacement is not None else None
             region = self.moving
             if region is None:
-                candidate = _central_scroll_region(previous, current, axis)
+                candidate = scroll_motion_region(previous, current, axis)
                 if candidate is not None:
                     across = candidate[2] - candidate[0] if axis == "y" else candidate[3] - candidate[1]
                     full_across = previous.width if axis == "y" else previous.height
@@ -316,15 +335,6 @@ class ScrollingCapture:
                         region = candidate
             region = region or (0, 0, previous.width, previous.height)
             first, second = previous.crop(region), current.crop(region)
-            if measured is None and scroll_frames_equal(first, second, axis):
-                edge = self.driver.at_edge(axis, 1)
-                if edge is True:
-                    return None, 0
-                if edge is False:
-                    raise ScrollCaptureError("Okno nie pokazuje nowej zawartości mimo przewijania. Zachowano przechwyconą część.")
-                if attempt == 2:
-                    return None, 0
-                continue
             try:
                 distance = measured if measured is not None else estimate_shift(first, second, axis, expected)
             except ScrollCaptureError:

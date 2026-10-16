@@ -12,15 +12,18 @@ import win32gui
 import win32process
 from PIL import Image, ImageChops, ImageGrab
 
-from scroll_capture import CaptureCancelled, ScrollCaptureError, frames_equal
+from scroll_capture import CaptureCancelled, ScrollCaptureError, frames_equal, scroll_frames_equal, scroll_motion_region
 from desktop_capture import DesktopFrameGrabber
 
 logger = logging.getLogger(__name__)
 
 
-def render_stable(first, second):
+def render_stable(first, second, axis="y"):
     # Small smooth-scroll movements must not count as stable just because the
     # screenshot matcher tolerates antialiasing differences below 18 levels.
+    region = scroll_motion_region(first, second, axis)
+    if region is not None:
+        first, second = first.crop(region), second.crop(region)
     scale = min(1, 320 / max(first.size))
     if scale < 1:
         size = tuple(max(1, round(value * scale)) for value in first.size)
@@ -31,7 +34,7 @@ def render_stable(first, second):
     if sum(level * count for level, count in enumerate(histogram)) / pixels < 0.35:
         return True
     # Preserve tolerance for a small animated advertisement or blinking caret.
-    return sum(histogram[18:]) / pixels >= 0.0015 and frames_equal(first, second)
+    return region is None and sum(histogram[18:]) / pixels >= 0.0015 and frames_equal(first, second)
 
 
 def foreground_matches(handle):
@@ -230,6 +233,7 @@ class WindowsScrollDriver:
 
     def scroll(self, axis, direction, units):
         self._check()
+        self._scroll_axis = axis
         if getattr(self, "_excel", None) is not None:
             self._excel.scroll(axis, direction, units)
             self._scroll_time = time.monotonic()
@@ -276,11 +280,12 @@ class WindowsScrollDriver:
         previous = self._grab()
         started = time.monotonic()
         pending = self._scroll_time is not None
+        axis = getattr(self, "_scroll_axis", "y")
         region = getattr(self, "_content_region", None)
         content = lambda frame: frame.crop(region) if region is not None else frame
         last_content = content(self._last_frame) if self._last_frame is not None else None
         previous_content = content(previous)
-        moved = pending and last_content is not None and not frames_equal(last_content, previous_content)
+        moved = pending and last_content is not None and not scroll_frames_equal(last_content, previous_content, axis)
         minimum = 0.10 if self._browser else 0.04
         # Busy browser pages can dispatch/render wheel input well after 250 ms.
         # Apply the extra grace only while no movement has appeared.
@@ -293,8 +298,8 @@ class WindowsScrollDriver:
             current = self._grab()
             current_content = content(current)
             if pending and not moved and last_content is not None:
-                moved = not frames_equal(last_content, current_content)
-            stable = stable + 1 if render_stable(previous_content, current_content) else 0
+                moved = not scroll_frames_equal(last_content, current_content, axis)
+            stable = stable + 1 if render_stable(previous_content, current_content, axis) else 0
             age = time.monotonic() - (self._scroll_time if pending else started)
             waited = time.monotonic() - started
             if stable >= stable_samples and age >= minimum and (not pending or moved or waited >= unchanged_wait):

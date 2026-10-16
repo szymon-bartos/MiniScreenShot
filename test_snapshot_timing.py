@@ -4,7 +4,8 @@ from unittest.mock import Mock, patch
 
 from PIL import Image
 from scroll_capture import CaptureCancelled
-from windows_scroll import WindowsScrollDriver
+from windows_scroll import WindowsScrollDriver, render_stable
+from test_scroll_capture import lead_table_image
 
 
 class SnapshotTimingTests(unittest.TestCase):
@@ -60,6 +61,21 @@ class SnapshotTimingTests(unittest.TestCase):
         with self.assertRaises(CaptureCancelled):
             self.driver.snapshot()
         self.assertLess(self.now, 0.06)
+
+    def test_sparse_lead_rows_are_not_treated_as_finished_smooth_scroll(self):
+        table = lead_table_image()
+        first = table.crop((0, 56, 720, 392))
+        second = table.crop((0, 61, 720, 397))
+        self.assertFalse(render_stable(first, second))
+
+    def test_instant_sparse_table_render_skips_the_unchanged_browser_timeout(self):
+        self.driver._browser = True
+        table = lead_table_image()
+        self.driver._last_frame = table.crop((0, 56, 720, 392))
+        final = table.crop((0, 140, 720, 476))
+        self.driver._grab = lambda: final
+        self.assertIs(self.driver.snapshot(), final)
+        self.assertLess(self.now, 0.2)
 
 
 if __name__ == "__main__":

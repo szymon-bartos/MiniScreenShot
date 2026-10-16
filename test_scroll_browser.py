@@ -111,9 +111,11 @@ class FirefoxCaptureTests(unittest.TestCase):
                          right - driver.bbox[0], bottom - driver.bbox[1])
                 self.assertIsNone(ImageChops.difference(baseline, covered).crop(panel).getbbox(), "Loader leaked into the screenshot")
                 self.assertEqual(win32gui.GetForegroundWindow(), handle, "Loader stole keyboard focus")
-                result = ScrollingCapture(driver, vertical=True, progress=loader.set_message).capture()
+                engine = ScrollingCapture(driver, vertical=True, progress=loader.set_message)
+                result = engine.capture()
                 result.save(folder / "full-page.png")
-                self.assertEqual(result.height, document.height)
+                self.assertEqual(result.height, document.height,
+                                 f"{window.title}; captured={engine.frame_count}; reason={engine.incomplete_reason}")
                 # The engine can trim static white margins. Compare the moving image.
                 self.assertLessEqual(result.width, document.width)
                 # Rounded native window corners can affect the outer two
