@@ -1,4 +1,4 @@
-# MiniScreenShot 1.1.8
+# MiniScreenShot 1.1.9
 
 <img src="assets/capture-frame.png" alt="Logo MiniScreenShot" width="112">
 
@@ -6,9 +6,9 @@ Przenośna aplikacja do zrzutów ekranu dla Windows. Stworzone przez Szymona Bar
 
 ## Pobieranie
 
-**[Pobierz MiniScreenShot dla Windows](https://github.com/szymon-bartos/MiniScreenShot/releases/download/v1.1.8/MiniScreenShot_v1.1.8_windows.zip)**
+**[Pobierz MiniScreenShot dla Windows](https://github.com/szymon-bartos/MiniScreenShot/releases/download/v1.1.9/MiniScreenShot_v1.1.9_windows.zip)**
 
-Rozpakuj cały ZIP, a następnie uruchom `MiniScreenShot_v1.1.8.exe` z rozpakowanego folderu. Katalog `_internal` musi pozostać obok EXE. Python ani instalator nie są potrzebne. Wszystkie opublikowane wersje są dostępne w [wydaniach GitHub](https://github.com/szymon-bartos/MiniScreenShot/releases). Warunki korzystania znajdziesz w [LICENSE.txt](LICENSE.txt) oraz w aplikacji pod przyciskiem „Informacje”.
+Rozpakuj cały ZIP, a następnie uruchom `MiniScreenShot_v1.1.9.exe` z rozpakowanego folderu. Katalog `_internal` musi pozostać obok EXE. Python ani instalator nie są potrzebne. Wszystkie opublikowane wersje są dostępne w [wydaniach GitHub](https://github.com/szymon-bartos/MiniScreenShot/releases). Warunki korzystania znajdziesz w [LICENSE.txt](LICENSE.txt) oraz w aplikacji pod przyciskiem „Informacje”.
 
 Do wydania dołączona jest suma SHA-256 archiwum. Potwierdza zgodność pobranego pliku z publikacją; nie zastępuje skanowania antywirusem ani podpisu cyfrowego.
 
@@ -23,8 +23,10 @@ Dla wersji 1.1.4 zgłoszono alarm przy uruchamianiu: `Behavior:Win32/DefenseEvas
 - Zrzut całego ekranu, wybranego okna lub zaznaczonego obszaru.
 - Przechwytywanie przewijanej zawartości w pionie i poziomie, z łączeniem fragmentów podczas jednego przejścia.
 - Zachowanie paska narzędzi aplikacji jeden raz nad połączoną zawartością.
+- Stałe dolne banery, np. komunikat cookies, zachowywane raz na końcu zrzutu, także gdy pojawią się podczas przewijania lub odświeżają przyciski.
 - Rozpoznawanie przewijanego panelu wewnątrz interfejsu, np. w systemie CRM, i oczekiwanie na opóźnione odświeżenie przeglądarki.
 - Dopasowywanie powtarzalnych tabel ERP po zmieniających się fragmentach wierszy, także w listach renderujących tylko widoczne rekordy w Chrome.
+- Ukrywanie panelu postępu na cały czas pobierania klatek, aby nie zostawiał na obrazie czarnego prostokąta.
 - W desktopowym Microsoft Excel: koniec na ostatnim wierszu lub kolumnie danych aktywnego arkusza; puste sformatowane komórki nie wydłużają zrzutu.
 - Automatyczne zmniejszanie bardzo dużych zrzutów do około 24 megapikseli lub mniej.
 - Podgląd z powiększaniem, strzałkami i przewijaniem dwoma palcami na touchpadzie.
@@ -44,7 +46,7 @@ Choose **Polski** or **English** from **Język / Language** at the top of the ma
 Wymagany jest Windows oraz Python 3.11 lub nowszy z Tkinterem.
 
 1. Uruchom `start_app.bat`, aby uruchomić aplikację z kodu.
-2. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.8\MiniScreenShot_v1.1.8.exe` i pełną paczkę `dist\MiniScreenShot_v1.1.8_windows.zip`. Skrypt przygotowuje środowisko i instaluje zależności z przypiętymi wersjami. Biblioteki nie są pakowane przez UPX.
+2. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.9\MiniScreenShot_v1.1.9.exe` i pełną paczkę `dist\MiniScreenShot_v1.1.9_windows.zip`. Skrypt przygotowuje środowisko i instaluje zależności z przypiętymi wersjami. Biblioteki nie są pakowane przez UPX.
 
 Głównym plikiem aplikacji jest `app_advanced.py`. Szczegółowa obsługa, ograniczenia przewijania i polecenia sprawdzające są opisane w [README_advanced.md](README_advanced.md).
 

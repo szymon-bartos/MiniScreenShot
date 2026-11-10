@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter
 
-from scroll_capture import ScrollingCapture, ScrollCaptureError, estimate_shift
+from scroll_capture import ScrollingCapture, ScrollCaptureError, estimate_shift, translated_motion_bounds
 
 
 def document_image(width, height):
@@ -98,6 +98,66 @@ class ScrollCaptureTests(unittest.TestCase):
         self.assertGreater(engine.frame_count, 1)
         self.assert_same_image(result, document)
 
+    def test_off_center_crm_panel_is_not_mistaken_for_end_of_page(self):
+        document = document_image(80, 910)
+        driver = FakeScrollDriver(document, viewport=(80, 300), native=False)
+        fixed = document_image(900, 600)
+        def snapshot():
+            driver.snapshots += 1
+            frame = fixed.copy()
+            frame.paste(document.crop((0, driver.y, 80, driver.y + 300)), (100, 170))
+            return frame
+        driver.snapshot = snapshot
+        engine = ScrollingCapture(driver)
+        result = engine.capture()
+        self.assertIsNone(engine.incomplete_reason)
+        self.assertGreater(engine.frame_count, 1)
+        self.assert_same_image(result, document)
+
+    def test_off_center_sparse_table_inside_a_flat_interface_is_complete(self):
+        document = lead_table_image().crop((0, 0, 250, 1344))
+        driver = FakeScrollDriver(document, viewport=(250, 280), native=False)
+        fixed = Image.new("RGB", (1400, 900), "#eef2f7")
+        def snapshot():
+            frame = fixed.copy()
+            frame.paste(document.crop((0, driver.y, 250, driver.y + 280)), (100, 400))
+            return frame
+        driver.snapshot = snapshot
+        engine = ScrollingCapture(driver)
+        result = engine.capture()
+        self.assertIsNone(engine.incomplete_reason)
+        self.assertGreater(engine.frame_count, 1)
+        self.assert_same_image(result, document)
+
+    def test_changing_cookie_banner_is_kept_once_below_scrolling_content(self):
+        for show_after in (0, 74, 600):
+            for animated in (False, True):
+                with self.subTest(show_after=show_after, animated=animated):
+                    self.check_cookie_banner(show_after, animated)
+
+    def check_cookie_banner(self, show_after, animated):
+        document = document_image(240, 907)
+        driver = FakeScrollDriver(document, native=False)
+        original = driver.snapshot
+        def snapshot():
+            frame = original()
+            if driver.y >= show_after:
+                draw = ImageDraw.Draw(frame)
+                draw.rectangle((16, 176, 255, 219), fill="#ff00fd")
+                draw.text((28, 184), "COOKIES", fill="white")
+                # Button/counter redraws must not expand the scrolling viewport.
+                draw.rectangle((186, 184, 230, 200), fill="white" if animated and driver.y % 2 else "#ff00fd")
+            return frame
+        driver.snapshot = snapshot
+        engine = ScrollingCapture(driver, include_window_frame=True)
+        result = engine.capture()
+        self.assertIsNone(engine.incomplete_reason)
+        content = result.crop(result.info["capture_content_box"])
+        self.assert_same_image(content, document.crop((0, 0, 240, document.height - 44)))
+        marker_rows = [y for y in range(result.height) if result.getpixel((20, y)) == (255, 0, 253)]
+        self.assertEqual(len(marker_rows), 44, "Cookie banner was repeated in the stitched page")
+        self.assertEqual(marker_rows, list(range(40 + document.height - 44, 40 + document.height)))
+
     def test_shallow_horizontal_panel_scrolls_inside_fixed_interface(self):
         document = document_image(1200, 36)
         driver = FakeScrollDriver(document, viewport=(600, 36), native=False)
@@ -136,6 +196,15 @@ class ScrollCaptureTests(unittest.TestCase):
         second = document.crop((0, 140, 720, 476))
         self.assertEqual(estimate_shift(first, second, "y"), 84)
         self.assertEqual(estimate_shift(first, first, "y"), 0)
+
+    def test_thin_edge_separator_preserves_the_complete_table_width(self):
+        document = lead_table_image()
+        first = Image.new("RGB", (984, 792), "#eef2f7")
+        second = first.copy()
+        first.paste(document.crop((0, 0, 720, 280)), (132, 369))
+        second.paste(document.crop((0, 84, 720, 364)), (132, 369))
+        box, _ = translated_motion_bounds(first, second, "y", 84)
+        self.assertEqual((box[0], box[1], box[2]), (132, 369, 852))
 
     def test_seek_start_does_not_stop_on_nonoverlapping_inner_panel_pages(self):
         document = document_image(50, 12000)

@@ -1,11 +1,9 @@
-"""Small non-activating progress panel, excluded from desktop screenshots."""
+"""Non-activating progress panel, hidden while source frames are sampled."""
 import ctypes
 import math
-import sys
 import time
 import tkinter as tk
 from contextlib import contextmanager
-from ctypes import wintypes
 
 import win32con
 import win32gui
@@ -22,6 +20,7 @@ class CaptureProgress:
         self.started = time.monotonic()
         self.last_paint = 0
         self.closed = False
+        self._capture_depth = 0
         self.window = tk.Toplevel(root)
         self.window.withdraw()
         self.window.overrideredirect(True)
@@ -55,10 +54,6 @@ class CaptureProgress:
         style = win32gui.GetWindowLong(self.handle, win32con.GWL_EXSTYLE)
         win32gui.SetWindowLong(self.handle, win32con.GWL_EXSTYLE,
                               style | 0x08000000 | win32con.WS_EX_TOOLWINDOW | win32con.WS_EX_TRANSPARENT)
-        user32 = ctypes.WinDLL("user32", use_last_error=True)
-        user32.SetWindowDisplayAffinity.argtypes = [wintypes.HWND, wintypes.DWORD]
-        user32.SetWindowDisplayAffinity.restype = wintypes.BOOL
-        self.excluded = sys.getwindowsversion().build >= 19041 and bool(user32.SetWindowDisplayAffinity(self.handle, 0x11))
         self.window.deiconify()
         self._show()
         self.pump()
@@ -84,13 +79,17 @@ class CaptureProgress:
 
     @contextmanager
     def capture_frame(self):
-        hide = not self.excluded and not self.closed
-        if hide:
-            win32gui.ShowWindow(self.handle, win32con.SW_HIDE)
-            ctypes.windll.dwmapi.DwmFlush()
+        hide = not self.closed and self._capture_depth == 0 and win32gui.IsWindowVisible(self.handle)
+        self._capture_depth += 1
         try:
+            if hide:
+                # Exclusion affinity can produce a black protected rectangle
+                # in GDI captures. Reveal the real source pixels instead.
+                win32gui.ShowWindow(self.handle, win32con.SW_HIDE)
+                ctypes.windll.dwmapi.DwmFlush()
             yield
         finally:
+            self._capture_depth -= 1
             if hide and not self.closed:
                 self._show()
 

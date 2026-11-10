@@ -49,6 +49,12 @@ class SnapshotTimingTests(unittest.TestCase):
         self.assertIs(self.driver.snapshot(), self.black)
         self.assertGreaterEqual(self.now, 0.5)
 
+    def test_browser_does_not_stop_before_a_slow_crm_finishes_rendering(self):
+        self.driver._browser = True
+        self.driver._grab = lambda: self.white if self.now < 1.05 else self.black
+        self.assertIs(self.driver.snapshot(), self.black)
+        self.assertGreaterEqual(self.now, 1.1)
+
     def test_busy_browser_does_not_finish_during_short_render_pause(self):
         self.driver._browser = True
         intermediate = Image.new("RGB", (120, 100), "gray")

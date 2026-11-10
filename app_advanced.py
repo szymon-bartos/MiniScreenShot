@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from contextlib import contextmanager
 
-APP_VERSION = "1.1.8"
+APP_VERSION = "1.1.9"
 
 from tk_runtime import prepare_tk_runtime
 

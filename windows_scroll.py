@@ -276,6 +276,12 @@ class WindowsScrollDriver:
         return self._excel.delta[axis] if getattr(self, "_excel", None) is not None else None
 
     def snapshot(self):
+        # Keep the panel hidden across the whole settling interval, rather
+        # than flashing it between each of the intermediate GDI samples.
+        with getattr(self, "frame_guard", nullcontext)():
+            return self._settled_snapshot()
+
+    def _settled_snapshot(self):
         self._check()
         previous = self._grab()
         started = time.monotonic()
@@ -289,10 +295,10 @@ class WindowsScrollDriver:
         minimum = 0.10 if self._browser else 0.04
         # Busy browser pages can dispatch/render wheel input well after 250 ms.
         # Apply the extra grace only while no movement has appeared.
-        unchanged_wait = 0.65 if self._browser else 0.16
+        unchanged_wait = 1.25 if self._browser else 0.16
         stable_samples = 4 if self._browser else 2
         stable = 0
-        while time.monotonic() - started < 1.0:
+        while time.monotonic() - started < (1.6 if self._browser else 1.0):
             time.sleep(0.025)
             self._check()
             current = self._grab()

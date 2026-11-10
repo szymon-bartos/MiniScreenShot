@@ -61,14 +61,14 @@ def motion_bounds(first, second):
     return (columns[0] + box[0], rows[0] + box[1], columns[2] + box[0], rows[-1] + box[1] + 1) if columns else None
 
 
-def scroll_motion_region(first, second, axis):
+def scroll_motion_region(first, second, axis, allow_offcenter=False):
     """Find motion along the wheel's column/row inside a fixed application UI."""
     box = motion_bounds(first, second)
     if box is None:
         return None
     left, top, right, bottom = box
     centered = left <= first.width // 2 < right if axis == "y" else top <= first.height // 2 < bottom
-    if not centered:
+    if not centered and not allow_offcenter:
         return None
     extent, across = ((bottom - top, right - left) if axis == "y" else (right - left, bottom - top))
     dimension = first.height if axis == "y" else first.width
@@ -78,7 +78,7 @@ def scroll_motion_region(first, second, axis):
 def scroll_frames_equal(first, second, axis, stable_ratio=0.8):
     if not frames_equal(first, second, stable_ratio):
         return False
-    box = scroll_motion_region(first, second, axis)
+    box = scroll_motion_region(first, second, axis, allow_offcenter=True)
     if box is None:
         return True
     # Repeated table cells can still look mostly equal inside their motion box.
@@ -143,8 +143,11 @@ def estimate_shift(first, second, axis, expected=None):
     if first.size != second.size:
         raise ScrollCaptureError("Rozmiar przechwytywanego okna zmienił się podczas przewijania.")
     sparse_motion = frames_equal(first, second)
-    if sparse_motion:
-        box = scroll_motion_region(first, second, axis)
+    box = scroll_motion_region(first, second, axis, allow_offcenter=True)
+    offcenter = box is not None and not (box[0] <= first.width // 2 < box[2] if axis == "y" else box[1] <= first.height // 2 < box[3])
+    # A flat surrounding interface may contain too few textured patches for
+    # frames_equal's majority check. Still register an off-center moving panel.
+    if sparse_motion or offcenter:
         if box is None:
             return 0
         first, second = first.crop(box), second.crop(box)
@@ -220,9 +223,66 @@ def estimate_shift(first, second, axis, expected=None):
             evidence.append((score, item))
         lowest = min(score for score, _ in evidence)
         plausible = [item for score, item in evidence if score <= lowest + 0.1]
+        if offcenter and len(plausible) > 1:
+            # A periodic animated ad can imitate translation away from the
+            # input point. Require a unique alignment for this fallback.
+            return 0
         zero = next((item for item in plausible if item[2] == 0), None)
         best = zero if zero is not None else (min(plausible, key=lambda item: abs(item[2] - expected)) if expected is not None else min(plausible))
     return best[2]
+
+
+def translated_motion_bounds(first, second, axis, distance):
+    """Exclude fixed edge overlays even when their buttons or counters redraw."""
+    if axis == "x":
+        a, b = first.transpose(Image.Transpose.TRANSPOSE), second.transpose(Image.Transpose.TRANSPOSE)
+    else:
+        a, b = first, second
+    box = motion_bounds(a, b)
+    limits = {}
+    if box is None or not 0 < distance < a.height - 12:
+        return (box if axis == "y" or box is None else (box[1], box[0], box[3], box[2])), limits
+    raw_full = ImageChops.difference(a, b).convert("L")
+    raw = raw_full.crop((0, 0, a.width, a.height - distance))
+    aligned = ImageChops.difference(a.crop((0, distance, a.width, a.height)),
+                                   b.crop((0, 0, b.width, b.height - distance))).convert("L")
+    improved = ImageChops.subtract(raw, aligned, offset=-8).point([0] + [255] * 255)
+    mask = ImageChops.multiply(improved, aligned.point([255] * 17 + [0] * 239))
+    raw_rows = raw.point([0] * 18 + [255] * 238).resize((1, raw.height), Image.Resampling.BOX).tobytes()
+    matched_rows = mask.resize((1, mask.height), Image.Resampling.BOX).tobytes()
+    rows = [index for index, (changed, matched) in enumerate(zip(raw_rows, matched_rows))
+            if changed >= 1 and matched >= changed * .6]
+    proof = None
+    if rows:
+        columns = mask.crop((0, rows[0], mask.width, rows[-1] + 1)).getbbox()
+        if columns:
+            proof = (columns[0], rows[0], columns[2], rows[-1] + 1)
+    if proof is not None:
+        left, top, right, bottom = box
+        # Locate fixed pixels themselves, rather than trimming at the last
+        # textured document row: blank page margins still belong to the page.
+        same = raw_full.point([255] * 5 + [0] * 251)
+        displaced = aligned.point([0] * 18 + [255] * 238)
+        prefix = ImageChops.multiply(same.crop((0, 0, a.width, a.height - distance)), displaced)
+        suffix = ImageChops.multiply(same.crop((0, distance, a.width, a.height)), displaced)
+        prefix_rows = prefix.crop((left, 0, right, prefix.height)).resize((1, prefix.height), Image.Resampling.BOX).tobytes()
+        suffix_rows = suffix.crop((left, 0, right, suffix.height)).resize((1, suffix.height), Image.Resampling.BOX).tobytes()
+        fixed_top = [row + 1 for row, value in enumerate(prefix_rows) if row < proof[1] and value >= 140]
+        fixed_bottom = [row + distance for row, value in enumerate(suffix_rows) if row >= proof[3] and value >= 140]
+        if fixed_top:
+            limits["start"] = max(fixed_top)
+            top = max(top, limits["start"])
+        if fixed_bottom:
+            limits["end"] = min(fixed_bottom)
+            bottom = min(bottom, limits["end"])
+        if limits and bottom > top:
+            # Do not apply motion_bounds' window-edge safety margin again:
+            # a two-pixel separator at the content edge can prove table width.
+            content_motion = raw_full.point([0] * 18 + [255] * 238).crop((left, top, right, bottom)).getbbox()
+            if content_motion:
+                left, right = left + content_motion[0], left + content_motion[2]
+        box = (left, top, right, bottom)
+    return (box if axis == "y" else (box[1], box[0], box[3], box[2])), limits
 
 
 class ScrollingCapture:
@@ -243,6 +303,7 @@ class ScrollingCapture:
         self._rates = {}
         self._units = {}
         self._counts = {}
+        self._fixed_limits = {}
 
     def _match_after_retry(self, previous, current, axis, expected):
         try:
@@ -260,7 +321,15 @@ class ScrollingCapture:
             return min(a.height - 12, round(expected) + 2)
 
     def _union_motion(self, first, second, axis, distance=None):
-        box = motion_bounds(first, second)
+        if distance:
+            box, limits = translated_motion_bounds(first, second, axis, distance)
+            start, end = (1, 3) if axis == "y" else (0, 2)
+            if "start" in limits:
+                self._fixed_limits[start] = max(self._fixed_limits.get(start, 0), limits["start"])
+            if "end" in limits:
+                self._fixed_limits[end] = min(self._fixed_limits.get(end, float("inf")), limits["end"])
+        else:
+            box = motion_bounds(first, second)
         if box:
             left, top, right, bottom = box
             if axis == "y" and distance and self.moving is not None and top < self.moving[1]:
@@ -301,6 +370,13 @@ class ScrollingCapture:
             self.moving = box if self.moving is None else (
                 min(self.moving[0], box[0]), min(self.moving[1], box[1]),
                 max(self.moving[2], box[2]), max(self.moving[3], box[3]))
+            # A newly appearing fixed banner may shrink a viewport discovered
+            # before it existed. Apply that boundary to every stored frame.
+            values = list(self.moving)
+            for index, limit in self._fixed_limits.items():
+                values[index] = max(values[index], limit) if index < 2 else min(values[index], limit)
+            if values[2] > values[0] and values[3] > values[1]:
+                self.moving = tuple(values)
 
     def _seek_start(self, axis, initial=None):
         previous = initial if initial is not None else self.driver.snapshot()

@@ -197,9 +197,12 @@ class CaptureStore:
                           ((0, top, left, min(bottom, top + content_size[1])), (0, top)),
                           ((right, top, source_size[0], min(bottom, top + content_size[1])), (right + max(0, max_x), top)),
                           ((0, bottom, source_size[0], source_size[1]), (0, bottom + max_y)))
-                with self._open_frame(self.frames[0]) as source:
-                    sx, sy = source.width / source_size[0], source.height / source_size[1]
-                    for box, origin in pieces:
+                for index, (box, origin) in enumerate(pieces):
+                    # A fixed bottom banner belongs at the end, with its final
+                    # appearance and the final visible page rows around it.
+                    record = self.frames[-1] if index == 3 else self.frames[0]
+                    with self._open_frame(record) as source:
+                        sx, sy = source.width / source_size[0], source.height / source_size[1]
                         if box[2] <= box[0] or box[3] <= box[1]:
                             continue
                         end = (min(size[0], round((origin[0] + box[2] - box[0]) * scale_x)),

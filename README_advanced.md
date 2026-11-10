@@ -1,6 +1,6 @@
-# MiniScreenShot v1.1.8
+# MiniScreenShot v1.1.9
 
-Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.8.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.8\MiniScreenShot_v1.1.8.exe`. Python nie jest wymagany do korzystania z gotowego programu.
+Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.9.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.9\MiniScreenShot_v1.1.9.exe`. Python nie jest wymagany do korzystania z gotowego programu.
 
 Aplikacja obsługuje przechwytywanie ekranu i przewijanej zawartości, przycinanie oraz oznaczanie obrazu ołówkiem i półprzezroczystym mazakiem. Duże zrzuty z przewijaniem są proporcjonalnie zmniejszane do około 24 megapikseli lub mniej. Mniejsze zrzuty zachowują pełną rozdzielczość.
 
@@ -10,7 +10,9 @@ Przechwytywanie i dopasowywanie fragmentów nadal odbywa się w jednym przejści
 
 Górny pasek aplikacji jest zachowywany jeden raz nad połączoną zawartością. Nieruchome boczne elementy i dolny pasek również są umieszczane raz. Limit około 24 MP obejmuje cały wynik, łącznie z paskami. Wąski panel pod punktem przewijania jest analizowany osobno od nieruchomego otoczenia. Pierwsze kroki są małe, aby ustalić przesunięcie; przeglądarka dostaje dodatkowy czas tylko wtedy, gdy jeszcze nie pokazała ruchu. Jeśli żaden fragment się nie przesunął, podgląd informuje „Widoczny obszar”, zamiast sugerować pełny zrzut.
 
-W powtarzalnych tabelach ERP nieruchoma siatka i jednakowe etykiety nie przesłaniają zmiany rekordów: dopasowanie uwzględnia zmieniające się fragmenty wierszy. Panel nie musi zajmować środka okna w kierunku przewijania. Zmiana klatki bez wspólnego fragmentu podczas szukania początku listy nie jest traktowana jako osiągnięcie jej granicy. Oczekiwanie na koniec renderowania również analizuje przewijany fragment, aby drobny tekst nie został uznany za zakończoną animację.
+W powtarzalnych tabelach ERP nieruchoma siatka i jednakowe etykiety nie przesłaniają zmiany rekordów: dopasowanie uwzględnia zmieniające się fragmenty wierszy. Program rozpoznaje również niewielkie panele odsunięte od środka okna. Zmiana klatki bez wspólnego fragmentu podczas szukania początku listy nie jest traktowana jako osiągnięcie jej granicy. Oczekiwanie na koniec renderowania również analizuje przewijany fragment, aby drobny tekst nie został uznany za zakończoną animację. Jeśli Chrome jeszcze nie pokazał ruchu, program czeka do 1,25 s na opóźnione odświeżenie; szybkie zmiany nie wymagają tego oczekiwania.
+
+Stałe banery przy krawędzi, np. dolny komunikat cookies, są oddzielane od przesuwającej się treści i umieszczane raz na końcu obrazu. Dotyczy to również banerów pojawiających się dopiero podczas przewijania i takich, w których zmienia się przycisk lub licznik. Dolny pasek pochodzi z ostatniej klatki. Program nie zamyka komunikatów strony ani nie akceptuje cookies. Nie może odtworzyć treści, która przez cały czas pozostaje zasłonięta; przed zrzutem można samodzielnie zamknąć taki komunikat.
 
 ## Microsoft Excel
 
@@ -20,7 +22,7 @@ Przed przechwytywaniem zakończ edycję komórki i zamknij okna dialogowe Excela
 
 Przewijanie porównuje podobieństwo fragmentów zamiast wymagać identycznych pikseli, toleruje drobne zmiany wyglądu i mierzy rzeczywiste przesunięcie podczas składania. Doładowanie zawartości lub zmiana prędkości przewijania nie powoduje automatycznego odrzucenia zrzutu. Jeśli ponowne pobranie klatki nie daje pewnego dopasowania, ale obraz nadal pasuje do wcześniejszego przesunięcia, program dopuszcza niewielką zakładkę. Informuje wtedy o tym w panelu postępu i statusie końcowym.
 
-Podczas pracy pojawia się niewielki panel z animacją, bieżącym etapem i czasem. Nie przejmuje fokusu ani kółka myszy. Windows wyklucza panel z przechwytywania; gdy ta funkcja jest niedostępna, program ukrywa go na czas pobierania klatki. Esc anuluje przechwytywanie.
+Podczas pracy pojawia się niewielki panel z animacją, bieżącym etapem i czasem. Nie przejmuje fokusu ani kółka myszy. Program ukrywa panel na cały czas pobierania i porównywania klatek oraz czeka na odświeżenie pulpitu, aby panel nie zostawiał czarnego prostokąta na obrazie. Esc anuluje przechwytywanie.
 
 ## Główne okno
 
@@ -73,9 +75,9 @@ Zdarzenia przewijania trafiają do zawartości wybranego okna, aby pasek adresu 
 
 1. Zainstaluj Python 3.11+ z obsługą Tkinter i zaznacz „Add Python to PATH”.
 2. Uruchom `start_app.bat`, aby uruchomić program z kodu.
-3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.8\MiniScreenShot_v1.1.8.exe` i paczkę `dist\MiniScreenShot_v1.1.8_windows.zip`.
+3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.9\MiniScreenShot_v1.1.9.exe` i paczkę `dist\MiniScreenShot_v1.1.9_windows.zip`.
 
-Budowanie korzysta z `MiniScreenShot_v1.1.8.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
+Budowanie korzysta z `MiniScreenShot_v1.1.9.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
 
 ## Cache i diagnostyka
 
@@ -107,10 +109,10 @@ Test rzeczywistego przechwytywania Windows: `python -m unittest test_scroll_live
 
 Test Firefoksa: `python -m unittest test_scroll_browser -v`. Otwiera lokalne strony w oddzielnym profilu w `build\browser-review`, sprawdza pełny zrzut przy płynnym przewijaniu, wąski panel CRM w nieruchomym interfejsie oraz brak loadera na obrazie. Nie korzysta z prywatnego profilu użytkownika.
 
-Test Chrome: `python -m unittest test_scroll_chrome -v`. Używa osobnego profilu w `build\chrome-review` i syntetycznej tabeli 48 leadów, z powtarzalną siatką oraz zmieniającymi się identyfikatorami. Lista rysuje wyłącznie widoczne rekordy na canvasie. Test porównuje wszystkie piksele połączonej listy z oryginałem, także przy opóźnieniu renderowania 450 ms i rozpoczęciu od środka listy. Nie korzysta z profilu ani danych ERP użytkownika.
+Test Chrome: `python -m unittest test_scroll_chrome -v`. Używa osobnego profilu w `build\chrome-review` i syntetycznej tabeli 48 leadów, z powtarzalną siatką oraz zmieniającymi się identyfikatorami. Lista rysuje wyłącznie widoczne rekordy na canvasie. Test porównuje wszystkie piksele połączonej listy z oryginałem, także przy opóźnieniu renderowania 1100 ms i rozpoczęciu od środka listy. Drugi test przechwytuje stronę o wysokości 5040 px z późno pojawiającym się banerem cookies i odświeżanym przyciskiem. Sprawdza pełną zawartość, pojedynczy baner, pasek Chrome oraz brak panelu postępu w pikselach. Nie korzysta z profilu ani danych ERP użytkownika.
 
 Test Excela: `python -m unittest test_excel_scroll -v`. Tworzy osobną instancję i testowy skoroszyt: 85 wierszy z pustą przerwą, formatowanie do wiersza 40 000, inny arkusz z danymi do wiersza 5000 oraz tabelę 30 kolumn. Sprawdza koniec na danych aktywnego arkusza i zachowanie wstążki. Zamyka wyłącznie własny skoroszyt bez zapisu.
 
 Test dużej strony: `python -m unittest test_scroll_large -v`. Sprawdza proporcjonalne zmniejszenie źródłowych 71,1 MP do 22,5 MP, fragmenty z całej wysokości strony, brak drugiego przebiegu i zapis jednego PNG. Wymaga kilkuset MB wolnego miejsca na pliki robocze. `test_capture_scaling` sprawdza również zmianę skali podczas pracy, brak pustych pasów na łączeniach, pion, poziom i siatkę oraz zachowanie oryginalnych pikseli małych zrzutów.
 
-Panel korzysta z Windows [SetWindowDisplayAffinity](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity) i pokazywania okna bez aktywacji. Sprawdzenie loadera obejmuje również wariant bez obsługi wykluczania okien z przechwytywania.
+Test panelu postępu obejmuje również symulację ścieżki przechwytywania, która zastępuje widoczne chronione okno czarnym prostokątem. Wynik musi pozostać zgodny z oryginałem piksel po pikselu.

@@ -12,13 +12,14 @@ from unittest.mock import patch
 import win32con
 import win32gui
 import win32process
-from PIL import ImageChops, ImageGrab
+from PIL import ImageChops, ImageGrab, ImageDraw
 
 from app_advanced import ScreenCaptureApp, tk
 from capture_progress import CaptureProgress
 from desktop_capture import DesktopFrameGrabber
 from test_scroll_capture import document_image
 from windows_scroll import WindowsScrollDriver
+from scroll_capture import ScrollingCapture
 
 ctypes.windll.user32.SetProcessDPIAware()
 
@@ -131,13 +132,44 @@ class LiveScrollTests(unittest.TestCase):
                 content = frame.crop((16, 40, 16 + width, 40 + height))
                 expected = document_image(421, 363).crop((0, 27, width, 27 + height))
                 self.assertIsNone(ImageChops.difference(content, expected).getbbox(), "Loader intercepted scrolling")
-                loader.excluded = False
-                fallback = driver.snapshot()
-                self.assertIsNone(ImageChops.difference(frame, fallback).getbbox(), "Fallback did not hide loader for the frame")
+                repeated = driver.snapshot()
+                self.assertIsNone(ImageChops.difference(frame, repeated).getbbox(), "Loader leaked into a repeated frame")
                 self.assertTrue(win32gui.IsWindowVisible(loader.handle))
             finally:
                 if loader:
                     loader.close()
+                driver.close()
+
+    def test_redacted_progress_window_never_leaves_a_black_rectangle(self):
+        with self.app._hidden_capture_windows():
+            self.app._focus_window_if_possible(self.window)
+            driver = WindowsScrollDriver(self.window)
+            loader = CaptureProgress(self.root, driver.bbox)
+            # Some desktop capture paths report exclusion support but redact
+            # visible protected windows instead of recovering the pixels below.
+            loader.excluded = True
+            original = driver._grabber.grab
+            def redacting_grab():
+                frame = original()
+                if win32gui.IsWindowVisible(loader.handle):
+                    left, top, right, bottom = win32gui.GetWindowRect(loader.handle)
+                    ImageDraw.Draw(frame).rectangle((left - driver.bbox[0], top - driver.bbox[1],
+                                                      right - driver.bbox[0], bottom - driver.bbox[1]), fill="black")
+                return frame
+            driver._grabber.grab = redacting_grab
+            driver.frame_guard, driver.pulse = loader.capture_frame, loader.pump
+            try:
+                engine = ScrollingCapture(driver, include_window_frame=True)
+                result = engine.capture()
+                self.assertIsNone(engine.incomplete_reason)
+                content = result.crop(result.info["capture_content_box"])
+                expected = document_image(421, 363).crop((0, 0, content.width, 363))
+                self.assertEqual(content.size, expected.size)
+                self.assertIsNone(ImageChops.difference(content, expected).getbbox(),
+                                  "Progress-window redaction damaged the stitched image")
+                result.close()
+            finally:
+                loader.close()
                 driver.close()
 
     def test_main_button_captures_two_axis_document_without_repeated_pixels(self):
