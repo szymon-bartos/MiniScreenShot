@@ -1,6 +1,6 @@
-# MiniScreenShot v1.1.9
+# MiniScreenShot v1.1.10
 
-Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.9.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.9\MiniScreenShot_v1.1.9.exe`. Python nie jest wymagany do korzystania z gotowego programu.
+Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.10.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.10\MiniScreenShot_v1.1.10.exe`. Python nie jest wymagany do korzystania z gotowego programu.
 
 Aplikacja obsługuje przechwytywanie ekranu i przewijanej zawartości, przycinanie oraz oznaczanie obrazu ołówkiem i półprzezroczystym mazakiem. Duże zrzuty z przewijaniem są proporcjonalnie zmniejszane do około 24 megapikseli lub mniej. Mniejsze zrzuty zachowują pełną rozdzielczość.
 
@@ -75,9 +75,11 @@ Zdarzenia przewijania trafiają do zawartości wybranego okna, aby pasek adresu 
 
 1. Zainstaluj Python 3.11+ z obsługą Tkinter i zaznacz „Add Python to PATH”.
 2. Uruchom `start_app.bat`, aby uruchomić program z kodu.
-3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.9\MiniScreenShot_v1.1.9.exe` i paczkę `dist\MiniScreenShot_v1.1.9_windows.zip`.
+3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.10\MiniScreenShot_v1.1.10.exe` i paczkę `dist\MiniScreenShot_v1.1.10_windows.zip`.
 
-Budowanie korzysta z `MiniScreenShot_v1.1.9.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
+Budowanie korzysta z `MiniScreenShot_v1.1.10.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
+
+Paczka Windows 1.1.10 jest budowana na Pythonie 3.15 z Tk 9. Precyzyjne zdarzenia touchpada wymagają Tk 9; przy uruchamianiu kodu ze starszym Tk 8.6 ich obsługa może się różnić.
 
 ## Cache i diagnostyka
 
@@ -92,6 +94,12 @@ Preferencja języka jest zapisywana w małym pliku `C:\MiniScreenShot\settings.j
 Wersja 1.1.4 otrzymała zgłoszenie Defendera `Behavior:Win32/DefenseEvasion.A!ml` podczas uruchamiania. W 1.1.5 zastosowano pakiet folderowy bez UPX i samorozpakowania przy starcie. Przyczyna zgłoszenia nie została potwierdzona przez Microsoft. Nie traktuj lokalnego skanu jako gwarancji ani nie dodawaj wyjątków antywirusa. Szczegóły i odnośnik do analizy Microsoft znajdują się w [README.md](README.md#status-zabezpieczeń).
 
 ## Sprawdzenie zmian
+
+Wersja 1.1.10 zabezpiecza zapis przed nadpisaniem pliku o tej samej nazwie: kolejne pliki otrzymują sufiks liczbowy. Nieudany zapis usuwa utworzony niepełny plik. Schowek jest zamykany również po błędzie kopiowania; jeżeli zapis zastępczy także się nie powiedzie, podgląd pozostaje otwarty. Brak dostępu do pliku logu nie blokuje startu, a diagnostyka korzysta wtedy z wpisów bieżącej sesji w pamięci.
+
+Skrypty uruchamiania i budowania używają `ensure_python.bat`, który sprawdza działanie środowiska `.venv` oraz dostępność Tkintera. Niesprawne środowisko jest odtwarzane przy użyciu dostępnego Pythona 3.11+ (`py -3` lub `python`). Jeśli interpreter jest niedostępny, skrypt podaje instrukcję instalacji. Błąd instalacji zależności przerywa dalsze działanie.
+
+Testy zapisu i awarii schowka: `python -m unittest test_capture_io test_app_storage -v`.
 
 Po zainstalowaniu zależności uruchom:
 

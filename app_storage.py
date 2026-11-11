@@ -111,10 +111,14 @@ def cache_session():
 
 
 def configure_logging():
-    folder = data_directory() / "logs"
-    folder.mkdir(exist_ok=True)
-    path = folder / "capture_debug.log"
-    handler = RotatingFileHandler(path, maxBytes=512 * 1024, backupCount=2, encoding="utf-8")
+    try:
+        folder = data_directory() / "logs"
+        folder.mkdir(exist_ok=True)
+        path = folder / "capture_debug.log"
+        handler = RotatingFileHandler(path, maxBytes=512 * 1024, backupCount=2, encoding="utf-8")
+    except OSError:
+        path = None
+        handler = logging.NullHandler()
     logging.basicConfig(handlers=[handler], level=logging.INFO,
                         format="%(asctime)s %(levelname)s %(message)s", force=True)
     return path

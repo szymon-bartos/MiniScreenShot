@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from contextlib import contextmanager
 
-APP_VERSION = "1.1.9"
+APP_VERSION = "1.1.10"
 
 from tk_runtime import prepare_tk_runtime
 
@@ -46,9 +46,22 @@ def timestamp_name(prefix: str) -> str:
 def save_image(img: Image.Image, prefix: str) -> str:
     folder = Path(CAPTURE_DIR)
     folder.mkdir(parents=True, exist_ok=True)
-    path = folder / timestamp_name(prefix)
-    img.save(path)
-    return str(path)
+    name = Path(timestamp_name(prefix))
+    index = 0
+    while True:
+        path = folder / (name.name if index == 0 else f"{name.stem}_{index}{name.suffix}")
+        try:
+            target = path.open("xb")
+        except FileExistsError:
+            index += 1
+            continue
+        try:
+            with target:
+                img.save(target, format="PNG")
+        except Exception:
+            path.unlink(missing_ok=True)
+            raise
+        return str(path)
 
 
 class SelectionOverlay(tk.Toplevel):
@@ -223,9 +236,8 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
         text.pack(fill="both", expand=True, padx=12, pady=(12, 8))
 
         try:
-            with open(LOG_PATH, "r", encoding="utf-8", errors="replace") as fh:
-                content = fh.read()
-        except FileNotFoundError:
+            content = LOG_PATH.read_text(encoding="utf-8", errors="replace") if LOG_PATH else ""
+        except OSError:
             content = ""
 
         if not content:
@@ -704,18 +716,23 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             image.convert("RGB").save(output, format="BMP")
             data = output.getvalue()[14:]
             win32clipboard.OpenClipboard()
-            win32clipboard.EmptyClipboard()
-            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
-            win32clipboard.CloseClipboard()
+            try:
+                win32clipboard.EmptyClipboard()
+                win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+            finally:
+                win32clipboard.CloseClipboard()
             self.set_status("Zrzut skopiowany do schowka.")
             preview.destroy()
             return
         except Exception:
-            path = save_image(image, "clipboard_copy")
-            self.root.clipboard_clear()
-            self.root.clipboard_append(path)
-            self.set_status(msg("Zrzut zapisany do pliku i ścieżka skopiowana: {path}", path=path))
-            preview.destroy()
+            try:
+                path = save_image(image, "clipboard_copy")
+                self.root.clipboard_clear()
+                self.root.clipboard_append(path)
+                self.set_status(msg("Zrzut zapisany do pliku i ścieżka skopiowana: {path}", path=path))
+                preview.destroy()
+            except Exception as exc:
+                self.ui.dialog(messagebox.showerror, "Błąd", error_message(exc))
 
     def _confirm_save(self, preview, image, prefix):
         self._commit_annotation(preview)

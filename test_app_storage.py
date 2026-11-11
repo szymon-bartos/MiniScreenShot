@@ -13,6 +13,12 @@ from capture_store import CaptureStore, CaptureStorageError
 
 
 class StorageTests(unittest.TestCase):
+    def test_unwritable_log_does_not_prevent_startup(self):
+        with patch("app_storage.data_directory", side_effect=PermissionError("Read-only")), \
+                patch("app_storage.logging.basicConfig") as configure:
+            self.assertIsNone(app_storage.configure_logging())
+        self.assertIsInstance(configure.call_args.kwargs["handlers"][0], app_storage.logging.NullHandler)
+
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory()
         self.addCleanup(self.folder.cleanup)
