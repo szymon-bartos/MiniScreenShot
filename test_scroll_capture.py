@@ -271,7 +271,8 @@ class ScrollCaptureTests(unittest.TestCase):
         with patch("scroll_capture.estimate_shift", side_effect=match):
             result = ScrollingCapture(driver).capture()
         self.assert_same_image(result, document)
-        self.assertEqual(hints[2], 222)
+        forward_units = [units for _, direction, units in driver.events if direction > 0]
+        self.assertEqual(hints[2], forward_units[2] * 37)
 
     def test_vertical_capture_keeps_original_horizontal_position(self):
         document = document_image(510, 420)

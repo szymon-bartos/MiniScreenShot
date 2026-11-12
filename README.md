@@ -1,4 +1,4 @@
-# MiniScreenShot 1.1.10
+# MiniScreenShot 1.1.11
 
 <img src="assets/capture-frame.png" alt="Logo MiniScreenShot" width="112">
 
@@ -6,15 +6,17 @@ Przenośna aplikacja do zrzutów ekranu dla Windows. Stworzone przez Szymona Bar
 
 ## Pobieranie
 
-**[Pobierz MiniScreenShot dla Windows](https://github.com/szymon-bartos/MiniScreenShot/releases/download/v1.1.10/MiniScreenShot_v1.1.10_windows.zip)**
+**[Pobierz MiniScreenShot dla Windows](https://github.com/szymon-bartos/MiniScreenShot/releases/download/v1.1.11/MiniScreenShot_v1.1.11_windows.zip)**
 
-Rozpakuj cały ZIP, a następnie uruchom `MiniScreenShot_v1.1.10.exe` z rozpakowanego folderu. Katalog `_internal` musi pozostać obok EXE. Python ani instalator nie są potrzebne. Wszystkie opublikowane wersje są dostępne w [wydaniach GitHub](https://github.com/szymon-bartos/MiniScreenShot/releases). Warunki korzystania znajdziesz w [LICENSE.txt](LICENSE.txt) oraz w aplikacji pod przyciskiem „Informacje”.
+Rozpakuj cały ZIP, a następnie uruchom `MiniScreenShot_v1.1.11.exe` z rozpakowanego folderu. Katalog `_internal` musi pozostać obok EXE. Python ani instalator nie są potrzebne. Wszystkie opublikowane wersje są dostępne w [wydaniach GitHub](https://github.com/szymon-bartos/MiniScreenShot/releases). Warunki korzystania znajdziesz w [LICENSE.txt](LICENSE.txt) oraz w aplikacji pod przyciskiem „Informacje”.
 
 Do wydania dołączona jest suma SHA-256 archiwum. Potwierdza zgodność pobranego pliku z publikacją; nie zastępuje skanowania antywirusem ani podpisu cyfrowego.
 
 Od 1.1.5 biblioteki są dostarczane w folderze aplikacji: program nie rozpakowuje ich przy każdym uruchomieniu. Cache trafia do `C:\MiniScreenShot\cache`; jeśli katalog jest niedostępny, do `%LOCALAPPDATA%\MiniScreenShot\cache`. Limit wynosi 512 MB na sesję. Pliki fragmentów są usuwane po złożeniu zrzutu, pliki dużego podglądu po jego zamknięciu, a pozostała sesja przy wyjściu. Kolejny start usuwa pozostałości po przerwanych sesjach, zachowując pliki uruchomionych kopii programu. Logi w sąsiednim folderze `logs` zajmują najwyżej około 1,5 MB.
 
 ### Status zabezpieczeń
+
+Komunikat Windows o wymaganym sprawdzeniu lub skanowaniu po uruchomieniu EXE wymaga odczytania jego dokładnej treści. Kontrola reputacji SmartScreen i wykrycie zagrożenia w Defenderze to różne zdarzenia. Nowa wersja pliku może wymagać ponownej oceny reputacji, nawet jeśli starsza się uruchamiała. Lokalny skan nie gwarantuje braku ostrzeżeń na innym komputerze. [Informacje Microsoft o SmartScreen](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation).
 
 Dla wersji 1.1.4 zgłoszono alarm przy uruchamianiu: `Behavior:Win32/DefenseEvasion.A!ml`. Zmiana sposobu pakowania w 1.1.5 nie jest rozstrzygnięciem tego zgłoszenia przez Microsoft. Aplikacja nie ma podpisu Authenticode, więc SmartScreen może również ostrzegać o nieznanym wydawcy. Jeśli Defender zablokuje plik, pozostaw go w kwarantannie i zgłoś szczegóły; nie wyłączaj ochrony ani nie dodawaj wyjątków. Plik można przekazać do [analizy Microsoft jako producent oprogramowania](https://www.microsoft.com/en-us/wdsi/filesubmission).
 
@@ -46,7 +48,7 @@ Choose **Polski** or **English** from **Język / Language** at the top of the ma
 Wymagany jest Windows oraz Python 3.11 lub nowszy z Tkinterem.
 
 1. Uruchom `start_app.bat`, aby uruchomić aplikację z kodu.
-2. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.10\MiniScreenShot_v1.1.10.exe` i pełną paczkę `dist\MiniScreenShot_v1.1.10_windows.zip`. Skrypt przygotowuje środowisko i instaluje zależności z przypiętymi wersjami. Biblioteki nie są pakowane przez UPX.
+2. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.11\MiniScreenShot_v1.1.11.exe` i pełną paczkę `dist\MiniScreenShot_v1.1.11_windows.zip`. Skrypt przygotowuje środowisko i instaluje zależności z przypiętymi wersjami. Biblioteki nie są pakowane przez UPX.
 
 Głównym plikiem aplikacji jest `app_advanced.py`. Szczegółowa obsługa, ograniczenia przewijania i polecenia sprawdzające są opisane w [README_advanced.md](README_advanced.md).
 

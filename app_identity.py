@@ -24,7 +24,7 @@ def apply_app_icon(root):
     root.iconbitmap(default=str(ICON_PATH))
     apply_window_icon(root)
     size = max(16, round(24 * root.winfo_fpixels("1i") / 96))
-    with Image.open(ARTWORK_PATH) as artwork:
+    with Image.open(ARTWORK_PATH, formats=("PNG",)) as artwork:
         root.app_brand_icon = ImageTk.PhotoImage(artwork.resize((size, size), Image.Resampling.LANCZOS), master=root)
     return root.app_brand_icon
 

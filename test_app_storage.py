@@ -106,7 +106,69 @@ class StorageTests(unittest.TestCase):
         self.addCleanup(app_storage.data_directory.cache_clear)
         with patch.dict(os.environ, {"LOCALAPPDATA": str(local)}), patch("app_storage._writable_directory", side_effect=writable):
             self.assertEqual(app_storage.data_directory(), local / "MiniScreenShot")
-        self.assertEqual(len(attempted), 2)
+        self.assertEqual(len(attempted), 3)
+
+    def test_denied_cache_uses_fallback_even_when_parent_is_writable(self):
+        local = Path(self.folder.name) / "LocalAppData"
+        attempts = []
+
+        def writable(path):
+            attempts.append(path)
+            normalized = str(path).replace("\\", "/")
+            if normalized == "C:/MiniScreenShot/cache":
+                raise PermissionError("Cache is read-only")
+            if not normalized.startswith("C:/"):
+                path.mkdir(parents=True, exist_ok=True)
+            return path
+
+        app_storage.data_directory.cache_clear()
+        self.addCleanup(app_storage.data_directory.cache_clear)
+        with patch.dict(os.environ, {"LOCALAPPDATA": str(local)}), \
+                patch("app_storage._writable_directory", side_effect=writable):
+            self.assertEqual(app_storage.data_directory(), local / "MiniScreenShot")
+        self.assertIn(Path("C:/MiniScreenShot/cache"), attempts)
+
+    def test_linked_parent_is_rejected_before_creating_child(self):
+        parent = Path(self.folder.name) / "redirected"
+        parent.mkdir()
+        child = parent / "cache"
+        original = app_storage._linked
+        with patch("app_storage._linked", side_effect=lambda path: path == parent or original(path)):
+            with self.assertRaises(OSError):
+                app_storage._writable_directory(child)
+        self.assertFalse(child.exists())
+
+    def test_linked_log_is_not_opened_or_rotated(self):
+        root = Path(self.folder.name)
+        logs = root / "logs"
+        logs.mkdir()
+        path = logs / "capture_debug.log"
+        path.write_bytes(b"preserve this file")
+        original = app_storage._linked
+        with patch("app_storage.data_directory", return_value=root), \
+                patch("app_storage._linked", side_effect=lambda item: item == path or original(item)), \
+                patch("app_storage.RotatingFileHandler") as handler, \
+                patch("app_storage.logging.basicConfig"):
+            self.assertIsNone(app_storage.configure_logging())
+        handler.assert_not_called()
+        self.assertEqual(path.read_bytes(), b"preserve this file")
+
+    def test_hardlinked_log_does_not_modify_the_other_file(self):
+        root = Path(self.folder.name)
+        logs = root / "logs"
+        logs.mkdir()
+        original = root / "keep.txt"
+        original.write_bytes(b"user file")
+        try:
+            os.link(original, logs / "capture_debug.log")
+        except OSError as exc:
+            self.skipTest(f"Filesystem does not support hard links: {exc}")
+        with patch("app_storage.data_directory", return_value=root), \
+                patch("app_storage.RotatingFileHandler") as handler, \
+                patch("app_storage.logging.basicConfig"):
+            self.assertIsNone(app_storage.configure_logging())
+        handler.assert_not_called()
+        self.assertEqual(original.read_bytes(), b"user file")
 
 
 if __name__ == "__main__":

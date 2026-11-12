@@ -7,13 +7,21 @@ import time
 from pathlib import Path
 
 import pygetwindow as gw
+import pefile
 import win32api
 import win32con
 import win32gui
 
 
-executable = Path(sys.argv[1] if len(sys.argv) > 1 else "dist/MiniScreenShot_v1.1.10/MiniScreenShot_v1.1.10.exe").resolve()
-title = "MiniScreenShot v1.1.10"
+executable = Path(sys.argv[1] if len(sys.argv) > 1 else "dist/MiniScreenShot_v1.1.11/MiniScreenShot_v1.1.11.exe").resolve()
+title = "MiniScreenShot v1.1.11"
+
+with pefile.PE(str(executable), fast_load=True) as pe:
+    flags = pe.OPTIONAL_HEADER.DllCharacteristics
+    assert flags & 0x0040, "ASLR is disabled"
+    assert flags & 0x0100, "DEP is disabled"
+    assert flags & 0x0020, "High entropy ASLR is disabled"
+print("EXE memory protection flags: ASLR, DEP, HighEntropyVA, OK")
 
 # Check that every ICO resolution is actually embedded in the packaged EXE.
 icon_data = Path("assets/capture-frame.ico").read_bytes()

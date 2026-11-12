@@ -40,7 +40,7 @@ class LargeScrollTests(unittest.TestCase):
                 self.assertLess(max(error), 5, "Scaled content was skipped or duplicated")
             first_forward = next(i for i, event in enumerate(driver.events) if event[1] > 0)
             self.assertTrue(all(event[1] > 0 for event in driver.events[first_forward:]))
-            self.assertLess(engine.frame_count, 60)
+            self.assertLess(engine.frame_count, 33)
             folder = Path("build/scroll-performance")
             folder.mkdir(parents=True, exist_ok=True)
             result.save(folder / "large-scaled.png")

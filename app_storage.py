@@ -31,9 +31,19 @@ def _lock(file):
 
 
 def _writable_directory(path):
+    # Check before mkdir as well: an existing junction in a parent must not
+    # redirect creation outside the intended application directory.
+    def check_parents():
+        for parent in (path, *path.parents):
+            try:
+                if _linked(parent):
+                    raise OSError("Application storage must be an ordinary directory")
+            except FileNotFoundError:
+                continue
+
+    check_parents()
     path.mkdir(parents=True, exist_ok=True)
-    if any(_linked(parent) for parent in (path, *path.parents)):
-        raise OSError("Application storage must be an ordinary directory")
+    check_parents()
     with tempfile.TemporaryFile(dir=path):
         pass
     return path
@@ -45,7 +55,11 @@ def data_directory():
     candidates.append(Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local" / "share")) / "MiniScreenShot")
     for candidate in candidates:
         try:
-            return _writable_directory(candidate)
+            folder = _writable_directory(candidate)
+            # A writable parent does not imply that an existing cache is
+            # accessible. Validate the directory actually needed at startup.
+            _writable_directory(folder / "cache")
+            return folder
         except OSError:
             continue
     raise OSError("Nie można utworzyć katalogu MiniScreenShot do zapisu plików roboczych.")
@@ -112,9 +126,14 @@ def cache_session():
 
 def configure_logging():
     try:
-        folder = data_directory() / "logs"
-        folder.mkdir(exist_ok=True)
+        folder = _writable_directory(data_directory() / "logs")
         path = folder / "capture_debug.log"
+        for target in (path, Path(str(path) + ".1"), Path(str(path) + ".2")):
+            try:
+                if _linked(target) or target.stat().st_nlink != 1:
+                    raise OSError("Application log must be an ordinary, unlinked file")
+            except FileNotFoundError:
+                continue
         handler = RotatingFileHandler(path, maxBytes=512 * 1024, backupCount=2, encoding="utf-8")
     except OSError:
         path = None

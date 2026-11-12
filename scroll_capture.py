@@ -19,10 +19,17 @@ class CaptureCancelled(ScrollCaptureError):
     pass
 
 
-def frames_equal(first, second, stable_ratio=0.8):
+def frame_difference(first, second):
+    """Compare pixels without copying images already in the capture mode."""
+    if first.mode == second.mode and first.mode in ("RGB", "L"):
+        return ImageChops.difference(first, second).convert("L")
+    return ImageChops.difference(first.convert("RGB"), second.convert("RGB")).convert("L")
+
+
+def frames_equal(first, second, stable_ratio=0.8, difference=None):
     if first.size != second.size:
         return False
-    diff = ImageChops.difference(first.convert("RGB"), second.convert("RGB")).convert("L")
+    diff = frame_difference(first, second) if difference is None else difference
     histogram = diff.histogram()
     # Ignore caret blinking, antialiasing noise and tiny redraws.
     if sum(histogram[18:]) / (first.width * first.height) < 0.0015:
@@ -43,12 +50,12 @@ def frames_equal(first, second, stable_ratio=0.8):
     return textured >= 4 and stable / textured >= stable_ratio
 
 
-def motion_bounds(first, second):
+def motion_bounds(first, second, difference=None):
     # Ignore the outside scrollbar tracks and window edge pixels.
     margin_x = max(2, first.width // 80)
     margin_y = max(2, first.height // 160)
     box = (margin_x, margin_y, first.width - margin_x, first.height - margin_y)
-    diff = ImageChops.difference(first.convert("RGB"), second.convert("RGB")).convert("L")
+    diff = frame_difference(first, second) if difference is None else difference
     mask = diff.point([0] * 18 + [255] * 238)
     mask = mask.crop(box)
     row_threshold = max(1, math.ceil(255 * max(4, mask.width * 0.004) / mask.width))
@@ -61,9 +68,9 @@ def motion_bounds(first, second):
     return (columns[0] + box[0], rows[0] + box[1], columns[2] + box[0], rows[-1] + box[1] + 1) if columns else None
 
 
-def scroll_motion_region(first, second, axis, allow_offcenter=False):
+def scroll_motion_region(first, second, axis, allow_offcenter=False, difference=None):
     """Find motion along the wheel's column/row inside a fixed application UI."""
-    box = motion_bounds(first, second)
+    box = motion_bounds(first, second, difference=difference)
     if box is None:
         return None
     left, top, right, bottom = box
@@ -76,9 +83,12 @@ def scroll_motion_region(first, second, axis, allow_offcenter=False):
 
 
 def scroll_frames_equal(first, second, axis, stable_ratio=0.8):
-    if not frames_equal(first, second, stable_ratio):
+    if first.size != second.size:
         return False
-    box = scroll_motion_region(first, second, axis, allow_offcenter=True)
+    difference = frame_difference(first, second)
+    if not frames_equal(first, second, stable_ratio, difference=difference):
+        return False
+    box = scroll_motion_region(first, second, axis, allow_offcenter=True, difference=difference)
     if box is None:
         return True
     # Repeated table cells can still look mostly equal inside their motion box.
@@ -142,8 +152,9 @@ def estimate_shift(first, second, axis, expected=None):
     """Find the positive content displacement, with pixel-level precision."""
     if first.size != second.size:
         raise ScrollCaptureError("Rozmiar przechwytywanego okna zmienił się podczas przewijania.")
-    sparse_motion = frames_equal(first, second)
-    box = scroll_motion_region(first, second, axis, allow_offcenter=True)
+    difference = frame_difference(first, second)
+    sparse_motion = frames_equal(first, second, difference=difference)
+    box = scroll_motion_region(first, second, axis, allow_offcenter=True, difference=difference)
     offcenter = box is not None and not (box[0] <= first.width // 2 < box[2] if axis == "y" else box[1] <= first.height // 2 < box[3])
     # A flat surrounding interface may contain too few textured patches for
     # frames_equal's majority check. Still register an off-center moving panel.
@@ -238,11 +249,11 @@ def translated_motion_bounds(first, second, axis, distance):
         a, b = first.transpose(Image.Transpose.TRANSPOSE), second.transpose(Image.Transpose.TRANSPOSE)
     else:
         a, b = first, second
-    box = motion_bounds(a, b)
+    raw_full = frame_difference(a, b)
+    box = motion_bounds(a, b, difference=raw_full)
     limits = {}
     if box is None or not 0 < distance < a.height - 12:
         return (box if axis == "y" or box is None else (box[1], box[0], box[3], box[2])), limits
-    raw_full = ImageChops.difference(a, b).convert("L")
     raw = raw_full.crop((0, 0, a.width, a.height - distance))
     aligned = ImageChops.difference(a.crop((0, distance, a.width, a.height)),
                                    b.crop((0, 0, b.width, b.height - distance))).convert("L")
@@ -436,7 +447,11 @@ class ScrollingCapture:
             self._rates[axis] = max(self._rates.get(axis, 0), distance / units)
             if self._counts[axis] >= 2:
                 extent = self.moving[2] - self.moving[0] if axis == "x" else self.moving[3] - self.moving[1]
-                self._units[axis] = max(1, min(24, int(extent * 0.42 / self._rates[axis])))
+                # Larger viewports retain plenty of alignment evidence at a
+                # 60% step. Small panels need the conservative overlap to cope
+                # with changing wheel speeds and animated repeated content.
+                fraction = 0.60 if extent >= 512 else 0.42
+                self._units[axis] = max(1, min(24, int(extent * fraction / self._rates[axis])))
             return current, distance
 
     def _record(self, store, frame, x, y, dx, dy):

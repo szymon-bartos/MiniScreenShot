@@ -8,5 +8,5 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 if errorlevel 1 exit /b 1
-.venv\Scripts\python.exe app_advanced.py
+.venv\Scripts\python.exe app_launcher.py
 exit /b %errorlevel%

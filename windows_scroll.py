@@ -12,7 +12,7 @@ import win32gui
 import win32process
 from PIL import Image, ImageChops, ImageGrab
 
-from scroll_capture import CaptureCancelled, ScrollCaptureError, frames_equal, scroll_frames_equal, scroll_motion_region
+from scroll_capture import CaptureCancelled, ScrollCaptureError, frames_equal, scroll_frames_equal, scroll_motion_region, frame_difference
 from desktop_capture import DesktopFrameGrabber
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,12 @@ logger = logging.getLogger(__name__)
 def render_stable(first, second, axis="y"):
     # Small smooth-scroll movements must not count as stable just because the
     # screenshot matcher tolerates antialiasing differences below 18 levels.
-    region = scroll_motion_region(first, second, axis)
+    difference = frame_difference(first, second)
+    # Stationary GDI samples are common during settling. An exact comparison
+    # avoids mask construction and resizing while retaining every pixel.
+    if difference.getbbox() is None:
+        return True
+    region = scroll_motion_region(first, second, axis, difference=difference)
     if region is not None:
         first, second = first.crop(region), second.crop(region)
     scale = min(1, 320 / max(first.size))

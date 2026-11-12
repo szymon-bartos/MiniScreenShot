@@ -1,12 +1,14 @@
-# MiniScreenShot v1.1.10
+# MiniScreenShot v1.1.11
 
-Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.10.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.10\MiniScreenShot_v1.1.10.exe`. Python nie jest wymagany do korzystania z gotowego programu.
+Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.11.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.11\MiniScreenShot_v1.1.11.exe`. Python nie jest wymagany do korzystania z gotowego programu.
 
 Aplikacja obsługuje przechwytywanie ekranu i przewijanej zawartości, przycinanie oraz oznaczanie obrazu ołówkiem i półprzezroczystym mazakiem. Duże zrzuty z przewijaniem są proporcjonalnie zmniejszane do około 24 megapikseli lub mniej. Mniejsze zrzuty zachowują pełną rozdzielczość.
 
 Przykład: strona 2736 × 26 000 px (71,1 MP) daje obraz 1539 × 14 625 px (22,5 MP), czyli około 68% mniej pikseli. Cała zawartość trafia do jednego PNG. Przy dużym powiększeniu podgląd renderuje tylko widoczną część obrazu. Jeśli strona przestanie się przewijać, zmieni treść lub osiągnie limit kroków, program zachowuje uzyskany fragment i wyraźnie oznacza podgląd jako „Zrzut częściowy”. [Testy i pomiary](build/scroll-performance/README.md).
 
 Przechwytywanie i dopasowywanie fragmentów nadal odbywa się w jednym przejściu. Każdy pobrany fragment jest od razu zachowywany, a wielkość kroku dostosowuje się podczas pracy. Po dotarciu do końca program składa zapisane fragmenty bez ponownego przewijania strony. Dopasowywanie korzysta z klatek w oryginalnej rozdzielczości; zmniejszane są fragmenty przechowywane do składania i końcowy obraz.
+
+Od 1.1.11 duże obszary są przewijane większym skalibrowanym krokiem, a małe panele zachowują większą zakładkę. Analizy ponownie wykorzystują różnicę tej samej pary obrazów, a identyczne klatki są rozpoznawane bez dodatkowego skalowania. Oczekiwanie na opóźnione renderowanie i obsługa Esc pozostają aktywne. W kontrolnym pomiarze strony 71,1 MP czas samego przechwytywania spadł z 11,87 s do 7,36 s, a liczba fragmentów z 40 do 31; wynik zachował pełną zawartość. Czasy zależą od strony i komputera. [Metoda pomiaru](build/scroll-performance/README.md).
 
 Górny pasek aplikacji jest zachowywany jeden raz nad połączoną zawartością. Nieruchome boczne elementy i dolny pasek również są umieszczane raz. Limit około 24 MP obejmuje cały wynik, łącznie z paskami. Wąski panel pod punktem przewijania jest analizowany osobno od nieruchomego otoczenia. Pierwsze kroki są małe, aby ustalić przesunięcie; przeglądarka dostaje dodatkowy czas tylko wtedy, gdy jeszcze nie pokazała ruchu. Jeśli żaden fragment się nie przesunął, podgląd informuje „Widoczny obszar”, zamiast sugerować pełny zrzut.
 
@@ -75,11 +77,11 @@ Zdarzenia przewijania trafiają do zawartości wybranego okna, aby pasek adresu 
 
 1. Zainstaluj Python 3.11+ z obsługą Tkinter i zaznacz „Add Python to PATH”.
 2. Uruchom `start_app.bat`, aby uruchomić program z kodu.
-3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.10\MiniScreenShot_v1.1.10.exe` i paczkę `dist\MiniScreenShot_v1.1.10_windows.zip`.
+3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.11\MiniScreenShot_v1.1.11.exe` i paczkę `dist\MiniScreenShot_v1.1.11_windows.zip`.
 
-Budowanie korzysta z `MiniScreenShot_v1.1.10.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
+Budowanie korzysta z `MiniScreenShot_v1.1.11.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
 
-Paczka Windows 1.1.10 jest budowana na Pythonie 3.15 z Tk 9. Precyzyjne zdarzenia touchpada wymagają Tk 9; przy uruchamianiu kodu ze starszym Tk 8.6 ich obsługa może się różnić.
+Paczka Windows 1.1.11 jest budowana na Pythonie 3.15 z Tk 9. Precyzyjne zdarzenia touchpada wymagają Tk 9; przy uruchamianiu kodu ze starszym Tk 8.6 ich obsługa może się różnić.
 
 ## Cache i diagnostyka
 
@@ -95,11 +97,17 @@ Wersja 1.1.4 otrzymała zgłoszenie Defendera `Behavior:Win32/DefenseEvasion.A!m
 
 ## Sprawdzenie zmian
 
-Wersja 1.1.10 zabezpiecza zapis przed nadpisaniem pliku o tej samej nazwie: kolejne pliki otrzymują sufiks liczbowy. Nieudany zapis usuwa utworzony niepełny plik. Schowek jest zamykany również po błędzie kopiowania; jeżeli zapis zastępczy także się nie powiedzie, podgląd pozostaje otwarty. Brak dostępu do pliku logu nie blokuje startu, a diagnostyka korzysta wtedy z wpisów bieżącej sesji w pamięci.
+Wersja 1.1.11 sprawdza dostęp do samego folderu cache, zanim wybierze katalog danych. Jeśli folder cache na C: jest niedostępny, używa lokalizacji zastępczej. Odrzuca dowiązania i punkty połączenia w ścieżce danych przed tworzeniem katalogów oraz dowiązane pliki logów. Błędy importu bibliotek i inicjalizacji są przechwytywane przez `app_launcher.py`, który potrafi wyświetlić komunikat bez działającego Tkintera. Nie obejmuje to błędów systemowego ładowania EXE lub brakującej biblioteki Pythona przed uruchomieniem kodu aplikacji. Skrypt budowania sprawdza start i zamknięcie EXE przed utworzeniem ZIP-a.
+
+Zależności 1.1.11 obejmują Pillow 13.0.0 i setuptools 84.2.1 z poprawkami znanych podatności. Odczyt grafiki interfejsu jest ograniczony do formatu PNG. Program przechwytuje piksele ekranu; nie udostępnia importowania zewnętrznych plików graficznych.
+
+Wersja 1.1.10 zabezpieczyła zapis przed nadpisaniem pliku o tej samej nazwie: kolejne pliki otrzymują sufiks liczbowy. Nieudany zapis usuwa utworzony niepełny plik. Schowek jest zamykany również po błędzie kopiowania; jeżeli zapis zastępczy także się nie powiedzie, podgląd pozostaje otwarty. Brak dostępu do pliku logu nie blokuje startu, a diagnostyka korzysta wtedy z wpisów bieżącej sesji w pamięci.
 
 Skrypty uruchamiania i budowania używają `ensure_python.bat`, który sprawdza działanie środowiska `.venv` oraz dostępność Tkintera. Niesprawne środowisko jest odtwarzane przy użyciu dostępnego Pythona 3.11+ (`py -3` lub `python`). Jeśli interpreter jest niedostępny, skrypt podaje instrukcję instalacji. Błąd instalacji zależności przerywa dalsze działanie.
 
 Testy zapisu i awarii schowka: `python -m unittest test_capture_io test_app_storage -v`.
+
+Testy inicjalizacji bez Tkintera i zabezpieczeń katalogów: `python -m unittest test_app_launcher test_app_storage -v`. Uruchamianie z kodu z obsługą błędów inicjalizacji: `python app_launcher.py`.
 
 Po zainstalowaniu zależności uruchom:
 
