@@ -9,6 +9,7 @@ from localization import LocalizedUI, msg
 
 
 AUTHOR_NOTE = "Stworzone przez Szymona Bartosa"
+PUBLISHER_NAME = "Szymon Bartos"
 LICENSE_TEXT = (Path(__file__).resolve().parent / "LICENSE.txt").read_text(encoding="utf-8").strip()
 ENGLISH_LICENSE_TEXT = (
     "The author grants the user a free, non-exclusive licence to use the program for private and commercial purposes. "
@@ -46,6 +47,11 @@ class InformationDialog(tk.Toplevel):
         self.author_label = self.ui.widget(tk.Label, header, text=AUTHOR_NOTE, bg=BACKGROUND, fg="#a5b4fc",
                                      font=("Segoe UI", 11), anchor="w", justify="left")
         self.author_label.grid(row=2, column=0, sticky="ew")
+        self.publisher_label = self.ui.widget(tk.Label, header,
+                                             text=msg("Wydawca: {publisher}", publisher=PUBLISHER_NAME),
+                                             bg=BACKGROUND, fg=MUTED, font=("Segoe UI", 10),
+                                             anchor="w", justify="left")
+        self.publisher_label.grid(row=3, column=0, sticky="ew", pady=(px(4), 0))
         self.ui.widget(tk.Label, self, text="Warunki licencji", bg=BACKGROUND, fg=TEXT,
                  font=("Segoe UI", 11, "bold"), anchor="w").grid(row=1, column=0, sticky="ew", padx=px(22), pady=(0, px(8)))
 

@@ -53,6 +53,7 @@ ENGLISH = {
     "Informacje — MiniScreenShot": "About MiniScreenShot",
     "Wersja {version}": "Version {version}",
     "Stworzone przez Szymona Bartosa": "Created by Szymon Bartos",
+    "Wydawca: {publisher}": "Publisher: {publisher}",
     "Warunki licencji": "Licence terms",
     "Zrzut ekranu": "Screenshot",
     "Nie poruszaj myszką i nie przełączaj okna.": "Do not move the mouse or switch windows during capture.",

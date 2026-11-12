@@ -1,14 +1,16 @@
-# MiniScreenShot 1.1.13
+# MiniScreenShot 1.1.14
 
 <img src="assets/capture-frame.png" alt="Logo MiniScreenShot" width="112">
 
 Przenośna aplikacja do zrzutów ekranu dla Windows. Stworzone przez Szymona Bartosa.
 
+**Autor i wydawca:** Szymon Bartos.
+
 ## Pobieranie
 
-**[Pobierz MiniScreenShot dla Windows](https://github.com/szymon-bartos/MiniScreenShot/releases/download/v1.1.13/MiniScreenShot_v1.1.13_windows.zip)**
+**[Pobierz MiniScreenShot dla Windows](https://github.com/szymon-bartos/MiniScreenShot/releases/download/v1.1.14/MiniScreenShot_v1.1.14_windows.zip)**
 
-Rozpakuj cały ZIP, a następnie uruchom `MiniScreenShot_v1.1.13.exe` z rozpakowanego folderu. Katalog `_internal` musi pozostać obok EXE. Python ani instalator nie są potrzebne. Wszystkie opublikowane wersje są dostępne w [wydaniach GitHub](https://github.com/szymon-bartos/MiniScreenShot/releases). Warunki korzystania znajdziesz w [LICENSE.txt](LICENSE.txt) oraz w aplikacji pod przyciskiem „Informacje”.
+Rozpakuj cały ZIP, a następnie uruchom `MiniScreenShot_v1.1.14.exe` z rozpakowanego folderu. Katalog `_internal` musi pozostać obok EXE. Python ani instalator nie są potrzebne. Wszystkie opublikowane wersje są dostępne w [wydaniach GitHub](https://github.com/szymon-bartos/MiniScreenShot/releases). Warunki korzystania znajdziesz w [LICENSE.txt](LICENSE.txt) oraz w aplikacji pod przyciskiem „Informacje”.
 
 Do wydania dołączona jest suma SHA-256 archiwum. Potwierdza zgodność pobranego pliku z publikacją; nie zastępuje skanowania antywirusem ani podpisu cyfrowego.
 
@@ -48,7 +50,7 @@ Choose **Polski** or **English** from **Język / Language** at the top of the ma
 Wymagany jest Windows oraz Python 3.11 lub nowszy z Tkinterem.
 
 1. Uruchom `start_app.bat`, aby uruchomić aplikację z kodu.
-2. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.13\MiniScreenShot_v1.1.13.exe` i pełną paczkę `dist\MiniScreenShot_v1.1.13_windows.zip`. Skrypt przygotowuje środowisko i instaluje zależności z przypiętymi wersjami. Biblioteki nie są pakowane przez UPX.
+2. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.14\MiniScreenShot_v1.1.14.exe` i pełną paczkę `dist\MiniScreenShot_v1.1.14_windows.zip`. Skrypt przygotowuje środowisko i instaluje zależności z przypiętymi wersjami. Biblioteki nie są pakowane przez UPX.
 
 Głównym plikiem aplikacji jest `app_advanced.py`. Szczegółowa obsługa, ograniczenia przewijania i polecenia sprawdzające są opisane w [README_advanced.md](README_advanced.md).
 

@@ -151,13 +151,16 @@ class LanguageInterfaceTests(unittest.TestCase):
     def test_about_dialog_translates_and_preserves_original_polish_licence(self):
         dialog = self.app.show_information()
         self.assertEqual(dialog.author_label.cget("text"), AUTHOR_NOTE)
+        self.assertEqual(dialog.publisher_label.cget("text"), "Wydawca: Szymon Bartos")
         self.app.set_language("en", persist=False)
         self.pump()
         self.assertEqual(dialog.title(), "About MiniScreenShot")
         self.assertEqual(dialog.author_label.cget("text"), "Created by Szymon Bartos")
+        self.assertEqual(dialog.publisher_label.cget("text"), "Publisher: Szymon Bartos")
         self.assertIn(ENGLISH_LICENSE_TEXT, dialog.license_text.get("1.0", "end"))
         self.assertIn(LICENSE_TEXT, dialog.license_text.get("1.0", "end"))
         self.app.set_language("pl", persist=False)
+        self.assertEqual(dialog.publisher_label.cget("text"), "Wydawca: Szymon Bartos")
         self.assertEqual(dialog.license_text.get("1.0", "end").strip(), LICENSE_TEXT)
 
     def test_english_window_picker_and_scroll_options_keep_selection(self):

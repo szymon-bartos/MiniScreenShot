@@ -13,8 +13,12 @@ import win32con
 import win32gui
 
 
-executable = Path(sys.argv[1] if len(sys.argv) > 1 else "dist/MiniScreenShot_v1.1.13/MiniScreenShot_v1.1.13.exe").resolve()
-title = "MiniScreenShot v1.1.13"
+executable = Path(sys.argv[1] if len(sys.argv) > 1 else "dist/MiniScreenShot_v1.1.14/MiniScreenShot_v1.1.14.exe").resolve()
+title = "MiniScreenShot v1.1.14"
+
+assert win32api.GetFileVersionInfo(str(executable), r"\StringFileInfo\041504b0\CompanyName") == "Szymon Bartos"
+assert win32api.GetFileVersionInfo(str(executable), r"\StringFileInfo\041504b0\Comments") == "Autor i wydawca: Szymon Bartos"
+print("EXE author/publisher metadata: Szymon Bartos, OK")
 
 with pefile.PE(str(executable), fast_load=True) as pe:
     flags = pe.OPTIONAL_HEADER.DllCharacteristics

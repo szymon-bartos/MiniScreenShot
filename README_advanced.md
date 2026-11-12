@@ -1,6 +1,8 @@
-# MiniScreenShot v1.1.13
+# MiniScreenShot v1.1.14
 
-Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.13.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.13\MiniScreenShot_v1.1.13.exe`. Python nie jest wymagany do korzystania z gotowego programu.
+**Autor i wydawca:** Szymon Bartos. Dane autora i wydawcy są dostępne w oknie „Informacje”; od 1.1.14 wydawca ma osobny, tłumaczony wiersz. Metadane EXE zawierają nazwę wydawcy oraz opis autora i wydawcy. Te wpisy identyfikują deklarowanego twórcę programu i nie zastępują podpisu Authenticode.
+
+Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.14.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.14\MiniScreenShot_v1.1.14.exe`. Python nie jest wymagany do korzystania z gotowego programu.
 
 Aplikacja obsługuje przechwytywanie ekranu i przewijanej zawartości, przycinanie oraz oznaczanie obrazu ołówkiem i półprzezroczystym mazakiem. Duże zrzuty z przewijaniem są proporcjonalnie zmniejszane do około 24 megapikseli lub mniej. Mniejsze zrzuty zachowują pełną rozdzielczość.
 
@@ -80,11 +82,11 @@ Zdarzenia przewijania trafiają do zawartości wybranego okna, aby pasek adresu 
 
 1. Zainstaluj Python 3.11+ z obsługą Tkinter i zaznacz „Add Python to PATH”.
 2. Uruchom `start_app.bat`, aby uruchomić program z kodu.
-3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.13\MiniScreenShot_v1.1.13.exe` i paczkę `dist\MiniScreenShot_v1.1.13_windows.zip`.
+3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.14\MiniScreenShot_v1.1.14.exe` i paczkę `dist\MiniScreenShot_v1.1.14_windows.zip`.
 
-Budowanie korzysta z `MiniScreenShot_v1.1.13.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
+Budowanie korzysta z `MiniScreenShot_v1.1.14.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
 
-Paczka Windows 1.1.13 jest budowana na Pythonie 3.15 z Tk 9. Precyzyjne zdarzenia touchpada wymagają Tk 9; przy uruchamianiu kodu ze starszym Tk 8.6 ich obsługa może się różnić.
+Paczka Windows 1.1.14 jest budowana na Pythonie 3.15 z Tk 9. Precyzyjne zdarzenia touchpada wymagają Tk 9; przy uruchamianiu kodu ze starszym Tk 8.6 ich obsługa może się różnić.
 
 ## Cache i diagnostyka
 
