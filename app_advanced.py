@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from contextlib import contextmanager
 
-APP_VERSION = "1.1.12"
+APP_VERSION = "1.1.13"
 
 from tk_runtime import prepare_tk_runtime
 
@@ -281,12 +281,7 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
     def _show_capture_warning(self):
         if hasattr(self, "capture_notice"):
             self.capture_notice.grid_remove()
-        scrolling = getattr(self, "selected_mode", "") == "window" and (self.vertical_var.get() or self.horizontal_var.get())
-        if scrolling:
-            message = ("Program przewinie zawartość i od razu połączy ją w pełny zrzut.\n"
-                       "Pozostaw wybrane okno aktywne i nie używaj myszy podczas przewijania.\n"
-                       "Esc lub przełączenie do innej aplikacji przerywa zrzut.")
-        elif getattr(self, "selected_mode", "") == "area":
+        if getattr(self, "selected_mode", "") == "area":
             message = "Zaznacz fragment ekranu myszą. Esc anuluje zaznaczanie."
         else:
             return

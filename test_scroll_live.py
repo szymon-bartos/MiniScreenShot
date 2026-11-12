@@ -4,14 +4,12 @@ import ctypes
 import subprocess
 import sys
 import time
-import threading
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 import win32con
 import win32gui
-import win32process
 from PIL import ImageChops, ImageGrab, ImageDraw
 
 from app_advanced import ScreenCaptureApp, tk
@@ -122,6 +120,19 @@ class LiveScrollTests(unittest.TestCase):
             try:
                 baseline = driver.snapshot()
                 loader = CaptureProgress(self.root, driver.bbox)
+                hint = loader.capture_hint.cget("text")
+                self.assertEqual(hint, "Nie poruszaj myszką i nie przełączaj okna.")
+                loader.set_message("Łączę fragmenty…")
+                self.assertEqual(loader.capture_hint.cget("text"), hint)
+                loader.ui.set_language("en")
+                self.assertEqual(loader.capture_hint.cget("text"),
+                                 "Do not move the mouse or switch windows during capture.")
+                loader.window.update_idletasks()
+                self.assertLessEqual(loader.elapsed.winfo_rooty() + loader.elapsed.winfo_height(),
+                                     loader.window.winfo_rooty() + loader.window.winfo_height())
+                hit = win32gui.WindowFromPoint(driver.pointer)
+                self.assertEqual(win32gui.GetAncestor(hit, 2), self.handle,
+                                 "Progress panel covered the native wheel-input target")
                 driver.pulse, driver.frame_guard = loader.pump, loader.capture_frame
                 frame = driver.snapshot()
                 self.assertIsNone(ImageChops.difference(baseline, frame).getbbox(), "Loader appeared in captured pixels")
@@ -175,26 +186,9 @@ class LiveScrollTests(unittest.TestCase):
     def test_main_button_captures_two_axis_document_without_repeated_pixels(self):
         self.app.vertical_var.set(True)
         self.app.horizontal_var.set(True)
-        # Dismiss only this process's real information dialog, like clicking OK.
-        stop = threading.Event()
-        def dismiss_warning():
-            deadline = time.monotonic() + 10
-            while not stop.is_set() and time.monotonic() < deadline:
-                dialogs = []
-                win32gui.EnumWindows(lambda h, _: dialogs.append(h) if win32gui.GetClassName(h) == "#32770"
-                                     and win32gui.GetWindowText(h) == "Zrzut ekranu"
-                                     and win32process.GetWindowThreadProcessId(h)[1] == os.getpid() else None, None)
-                for dialog in dialogs:
-                    # Tk's native OK button can have IDCANCEL (2), not IDOK (1).
-                    win32gui.PostMessage(dialog, win32con.WM_CLOSE, 0, 0)
-                stop.wait(0.05)
-        thread = threading.Thread(target=dismiss_warning, daemon=True)
-        thread.start()
-        try:
+        with patch("app_advanced.messagebox.showinfo",
+                   side_effect=AssertionError("Scrolling capture must not require confirmation")):
             result = self.capture_from_main_button()
-        finally:
-            stop.set()
-            thread.join(timeout=2)
         expected = document_image(421, 363)
         content = result.crop(result.info["capture_content_box"])
         self.assertEqual(content.size, expected.size)

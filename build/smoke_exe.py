@@ -13,8 +13,8 @@ import win32con
 import win32gui
 
 
-executable = Path(sys.argv[1] if len(sys.argv) > 1 else "dist/MiniScreenShot_v1.1.12/MiniScreenShot_v1.1.12.exe").resolve()
-title = "MiniScreenShot v1.1.12"
+executable = Path(sys.argv[1] if len(sys.argv) > 1 else "dist/MiniScreenShot_v1.1.13/MiniScreenShot_v1.1.13.exe").resolve()
+title = "MiniScreenShot v1.1.13"
 
 with pefile.PE(str(executable), fast_load=True) as pe:
     flags = pe.OPTIONAL_HEADER.DllCharacteristics

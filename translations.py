@@ -55,8 +55,7 @@ ENGLISH = {
     "Stworzone przez Szymona Bartosa": "Created by Szymon Bartos",
     "Warunki licencji": "Licence terms",
     "Zrzut ekranu": "Screenshot",
-    "Program przewinie zawartość i od razu połączy ją w pełny zrzut.\nPozostaw wybrane okno aktywne i nie używaj myszy podczas przewijania.\nEsc lub przełączenie do innej aplikacji przerywa zrzut.":
-        "The application will scroll the content and stitch it into a full screenshot.\nKeep the selected window active and leave the mouse untouched during capture.\nPressing Esc or switching to another application cancels the capture.",
+    "Nie poruszaj myszką i nie przełączaj okna.": "Do not move the mouse or switch windows during capture.",
     "Zaznacz fragment ekranu myszą. Esc anuluje zaznaczanie.": "Drag to select an area of the screen. Press Esc to cancel.",
     "Podgląd zrzutu": "Screenshot preview",
     "Na wierzchu": "Always on top",

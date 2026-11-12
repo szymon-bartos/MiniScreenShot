@@ -1,6 +1,6 @@
-# MiniScreenShot v1.1.12
+# MiniScreenShot v1.1.13
 
-Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.12.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.12\MiniScreenShot_v1.1.12.exe`. Python nie jest wymagany do korzystania z gotowego programu.
+Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.13.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.13\MiniScreenShot_v1.1.13.exe`. Python nie jest wymagany do korzystania z gotowego programu.
 
 Aplikacja obsługuje przechwytywanie ekranu i przewijanej zawartości, przycinanie oraz oznaczanie obrazu ołówkiem i półprzezroczystym mazakiem. Duże zrzuty z przewijaniem są proporcjonalnie zmniejszane do około 24 megapikseli lub mniej. Mniejsze zrzuty zachowują pełną rozdzielczość.
 
@@ -72,17 +72,19 @@ Program znajduje początek zawartości, a następnie podczas jednego przewijania
 
 Nie zmieniaj aktywnego okna, rozmiaru ani powiększenia zawartości podczas przechwytywania. Esc anuluje zrzut. Drobne różnice obrazu mogą skutkować niewielką zakładką. Limit 240 kroków na kierunek i kontrola wolnego miejsca chronią przed stronami przewijającymi się bez końca; ich osiągnięcie daje zrzut częściowy z opisem przyczyny. Pliki robocze są usuwane po zamknięciu podglądu. Ostateczny PNG zapisujesz przyciskiem „Zapisz”.
 
+Od 1.1.13 zrzut z przewijaniem rozpoczyna się bez okna wymagającego potwierdzenia. W panelu postępu jest osobna, stała wskazówka „Nie poruszaj myszką i nie przełączaj okna”, widoczna niezależnie od zmieniającego się opisu etapu. Poniżej pozostaje licznik czasu i przypomnienie o anulowaniu klawiszem Esc. Wskazówka jest dostępna po polsku i angielsku.
+
 Zdarzenia przewijania trafiają do zawartości wybranego okna, aby pasek adresu lub inne pole z fokusem nie przejmowało kółka.
 
 ## Uruchomienie kodu i budowanie EXE
 
 1. Zainstaluj Python 3.11+ z obsługą Tkinter i zaznacz „Add Python to PATH”.
 2. Uruchom `start_app.bat`, aby uruchomić program z kodu.
-3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.12\MiniScreenShot_v1.1.12.exe` i paczkę `dist\MiniScreenShot_v1.1.12_windows.zip`.
+3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.13\MiniScreenShot_v1.1.13.exe` i paczkę `dist\MiniScreenShot_v1.1.13_windows.zip`.
 
-Budowanie korzysta z `MiniScreenShot_v1.1.12.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
+Budowanie korzysta z `MiniScreenShot_v1.1.13.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
 
-Paczka Windows 1.1.12 jest budowana na Pythonie 3.15 z Tk 9. Precyzyjne zdarzenia touchpada wymagają Tk 9; przy uruchamianiu kodu ze starszym Tk 8.6 ich obsługa może się różnić.
+Paczka Windows 1.1.13 jest budowana na Pythonie 3.15 z Tk 9. Precyzyjne zdarzenia touchpada wymagają Tk 9; przy uruchamianiu kodu ze starszym Tk 8.6 ich obsługa może się różnić.
 
 ## Cache i diagnostyka
 

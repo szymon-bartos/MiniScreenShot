@@ -63,6 +63,25 @@ class CaptureTargetingTests(unittest.TestCase):
         self.app.root = DummyRoot()
         self.app.set_status = lambda message: None
 
+    def test_scrolling_starts_without_confirmation_in_either_direction(self):
+        self.app.selected_mode = "window"
+        window = DummyWindow("Test", 10, 10, 500, 400)
+        for vertical, horizontal in ((True, False), (False, True), (True, True)):
+            with self.subTest(vertical=vertical, horizontal=horizontal):
+                self.app.vertical_var = Mock(get=Mock(return_value=vertical))
+                self.app.horizontal_var = Mock(get=Mock(return_value=horizontal))
+                with patch("app_advanced.messagebox.showinfo") as dialog, \
+                        patch.object(self.app, "_capture_scrolled_window") as capture:
+                    self.app._capture_window_obj(window)
+                dialog.assert_not_called()
+                capture.assert_called_once_with(window)
+
+    def test_area_selection_keeps_its_instructions(self):
+        self.app.selected_mode = "area"
+        with patch("app_advanced.messagebox.showinfo") as dialog:
+            self.app._show_capture_warning()
+        dialog.assert_called_once()
+
     def test_get_selectable_windows_excludes_app_window(self):
         original = gw.getAllWindows
         gw.getAllWindows = lambda: [

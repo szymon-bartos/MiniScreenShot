@@ -29,7 +29,7 @@ class CaptureProgress:
         self.window.configure(bg="#334155")
         scale = root.winfo_fpixels("1i") / 96
         px = lambda value: round(value * scale)
-        width, height = px(350), px(110)
+        width, height = px(350), px(150)
         work = win32api.GetMonitorInfo(win32api.MonitorFromRect(bbox, 2))["Work"]
         x = min(work[2] - width - px(16), max(work[0] + px(8), bbox[2] - width - px(16)))
         y = min(work[3] - height - px(16), max(work[1] + px(8), bbox[3] - height - px(16)))
@@ -47,8 +47,13 @@ class CaptureProgress:
         self.phase = self.ui.widget(tk.Label, card, text="Ustalam granice zawartości…", font=("Segoe UI", 9),
                               fg=MUTED, bg=SURFACE, anchor="w", justify="left", wraplength=px(270))
         self.phase.grid(row=1, column=1, sticky="ew", pady=(px(3), 0))
+        self.capture_hint = self.ui.widget(tk.Label, card,
+                                         text="Nie poruszaj myszką i nie przełączaj okna.",
+                                         font=("Segoe UI", 9), fg="#fbbf24", bg=SURFACE,
+                                         anchor="w", justify="left", wraplength=px(320))
+        self.capture_hint.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(px(8), 0))
         self.elapsed = self.ui.widget(tk.Label, card, font=("Segoe UI", 8), fg="#a5b4fc", bg=SURFACE, anchor="w")
-        self.elapsed.grid(row=2, column=1, sticky="ew", pady=(px(6), 0))
+        self.elapsed.grid(row=3, column=1, sticky="ew", pady=(px(6), 0))
         self.window.update_idletasks()
         self.handle = win32gui.GetAncestor(self.window.winfo_id(), 2)
         style = win32gui.GetWindowLong(self.handle, win32con.GWL_EXSTYLE)
