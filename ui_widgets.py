@@ -110,7 +110,7 @@ class RangeSlider(tk.Canvas):
         self.variable, self.command = variable, command
         self.minimum, self.maximum = minimum, maximum
         self.scale = parent.winfo_fpixels("1i") / 96
-        super().__init__(parent, bg=BACKGROUND, bd=0, highlightthickness=0,
+        super().__init__(parent, bg=parent.cget("background"), bd=0, highlightthickness=0,
                          width=round(90 * self.scale), height=round(30 * self.scale), takefocus=True, cursor="hand2")
         self.trace = variable.trace_add("write", lambda *args: self._draw())
         self.bind("<Configure>", lambda event: self._draw())
@@ -151,7 +151,11 @@ class RangeSlider(tk.Canvas):
         if x > padding:
             self.create_line(padding, middle, x, middle, fill="#6366f1", width=max(2, round(4 * self.scale)), capstyle="round")
         radius = 6 * self.scale
-        self.create_oval(x - radius, middle - radius, x + radius, middle + radius, fill="#a5b4fc", outline="#818cf8", width=2)
+        halo = 9 * self.scale
+        self.create_oval(x - halo, middle - halo, x + halo, middle + halo,
+                         fill="#394879" if self.focus_get() is self else "#1c2945", outline="")
+        self.create_oval(x - radius, middle - radius, x + radius, middle + radius,
+                         fill="#c7d2fe", outline=ACCENT, width=max(1, round(self.scale)))
 
 
 class ToggleSwitch(tk.Canvas):
@@ -160,7 +164,7 @@ class ToggleSwitch(tk.Canvas):
         self.scale = parent.winfo_fpixels("1i") / 96
         self.disabled = False
         self.focused = False
-        super().__init__(parent, bg=SURFACE, highlightthickness=0, bd=0,
+        super().__init__(parent, bg=parent.cget("background"), highlightthickness=0, bd=0,
                          width=round(52 * self.scale), height=round(32 * self.scale),
                          takefocus=True, cursor="hand2")
         self.trace = variable.trace_add("write", lambda *args: self._draw())
@@ -202,8 +206,11 @@ class ToggleSwitch(tk.Canvas):
         fill = "#6366f1" if self.variable.get() else "#36435b"
         if self.disabled:
             fill = "#263248"
-        rounded_rectangle(self, 3 * unit, 4 * unit, 49 * unit, 28 * unit,
-                          radius=12 * unit, fill=fill, outline=ACCENT if self.focused else fill, width=2)
+        if self.focused:
+            self.create_line(15 * unit, 16 * unit, 37 * unit, 16 * unit,
+                             fill=ACCENT, width=round(28 * unit), capstyle="round")
+        self.create_line(15 * unit, 16 * unit, 37 * unit, 16 * unit,
+                         fill=fill, width=round(24 * unit), capstyle="round")
         left = (28 if self.variable.get() else 6) * unit
         self.create_oval(left, 7 * unit, left + 18 * unit, 25 * unit,
                          fill="#64748b" if self.disabled else "#ffffff", outline="")

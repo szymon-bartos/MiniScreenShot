@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from contextlib import contextmanager
 
-APP_VERSION = "1.1.11"
+APP_VERSION = "1.1.12"
 
 from tk_runtime import prepare_tk_runtime
 
@@ -338,9 +338,9 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
         preview.brand = self.ui.widget(tk.Label, header, text="  MiniScreenShot", image=self.brand_icon, compound="left",
                                  bg=BACKGROUND, fg="#a5b4fc", font=("Segoe UI", 9, "bold"), anchor="w")
         preview.brand.grid(row=0, column=0, sticky="w")
-        preview.pin_group = tk.Frame(header, bg=SURFACE, padx=8)
+        preview.pin_group = tk.Frame(header, bg=BACKGROUND, padx=8)
         preview.pin_group.grid(row=0, column=1, sticky="e")
-        self.ui.widget(tk.Label, preview.pin_group, text="Na wierzchu", bg=SURFACE, fg=MUTED, font=("Segoe UI", 9)).pack(side="left", padx=(0, 6))
+        self.ui.widget(tk.Label, preview.pin_group, text="Na wierzchu", bg=BACKGROUND, fg=MUTED, font=("Segoe UI", 9)).pack(side="left", padx=(0, 6))
         preview.pin_switch = ToggleSwitch(preview.pin_group, preview.pin_var)
         preview.pin_switch.pack(side="left")
         preview.heading = self.ui.widget(tk.Label, header, text="Zrzut gotowy", bg=BACKGROUND, fg=TEXT, font=("Segoe UI", 18, "bold"), anchor="w")
