@@ -1,8 +1,8 @@
-# MiniScreenShot v1.1.14
+# MiniScreenShot v1.1.15
 
 **Autor i wydawca:** Szymon Bartos. Dane autora i wydawcy są dostępne w oknie „Informacje”; od 1.1.14 wydawca ma osobny, tłumaczony wiersz. Metadane EXE zawierają nazwę wydawcy oraz opis autora i wydawcy. Te wpisy identyfikują deklarowanego twórcę programu i nie zastępują podpisu Authenticode.
 
-Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.14.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.14\MiniScreenShot_v1.1.14.exe`. Python nie jest wymagany do korzystania z gotowego programu.
+Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.15.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.15\MiniScreenShot_v1.1.15.exe`. Python nie jest wymagany do korzystania z gotowego programu.
 
 Aplikacja obsługuje przechwytywanie ekranu i przewijanej zawartości, przycinanie oraz oznaczanie obrazu ołówkiem i półprzezroczystym mazakiem. Duże zrzuty z przewijaniem są proporcjonalnie zmniejszane do około 24 megapikseli lub mniej. Mniejsze zrzuty zachowują pełną rozdzielczość.
 
@@ -17,6 +17,16 @@ Górny pasek aplikacji jest zachowywany jeden raz nad połączoną zawartością
 W powtarzalnych tabelach ERP nieruchoma siatka i jednakowe etykiety nie przesłaniają zmiany rekordów: dopasowanie uwzględnia zmieniające się fragmenty wierszy. Program rozpoznaje również niewielkie panele odsunięte od środka okna. Zmiana klatki bez wspólnego fragmentu podczas szukania początku listy nie jest traktowana jako osiągnięcie jej granicy. Oczekiwanie na koniec renderowania również analizuje przewijany fragment, aby drobny tekst nie został uznany za zakończoną animację. Jeśli Chrome jeszcze nie pokazał ruchu, program czeka do 1,25 s na opóźnione odświeżenie; szybkie zmiany nie wymagają tego oczekiwania.
 
 Stałe banery przy krawędzi, np. dolny komunikat cookies, są oddzielane od przesuwającej się treści i umieszczane raz na końcu obrazu. Dotyczy to również banerów pojawiających się dopiero podczas przewijania i takich, w których zmienia się przycisk lub licznik. Dolny pasek pochodzi z ostatniej klatki. Program nie zamyka komunikatów strony ani nie akceptuje cookies. Nie może odtworzyć treści, która przez cały czas pozostaje zasłonięta; przed zrzutem można samodzielnie zamknąć taki komunikat.
+
+## CRM: niezależnie przewijane menu i treść
+
+Od 1.1.15 automatyczne wykrywanie nie rozszerza już zarejestrowanej treści o boczny panel, który zaczyna poruszać się niezależnie. Nowy fragment musi pasować do przesunięcia przechwytywanej zawartości. Zapobiega to błędnemu łączeniu menu z treścią i przedwczesnemu zakończeniu zrzutu.
+
+Jeśli środek okna wypada nad menu lub innym panelem, wybierz **Okno aplikacji**, okno CRM i kierunek przewijania, a następnie kliknij **Zrzut wybranego panelu**. Zaznacz samą przewijaną treść, bez nieruchomego nagłówka, menu i pasków. Zaznaczenie musi mieć co najmniej 32 × 32 piksele. Kółko trafia do środka wskazanego panelu; dopasowywanie i oczekiwanie na odświeżenie analizują jego zawartość. Ruch innych paneli nie powiększa wyniku. Wybrany panel jest przechwytywany od razu, a PNG zapisujesz w podglądzie. Wynik zawiera tylko panel, bez otoczenia okna.
+
+Esc anuluje wybór lub przechwytywanie. Zaznaczenie dotyczy pojedynczego zrzutu i nie jest zapamiętywane dla innych okien. Zmiana położenia lub rozmiaru okna w trakcie wyboru przerywa operację. Automatyczny zrzut pozostaje dostępny pod zwykłym przyciskiem i zachowuje otaczające paski raz.
+
+Wskazanie panelu nie odtwarza zasłoniętej lub niezaładowanej treści. Jeśli aplikacja nie pozwala przewinąć panelu albo zmienia rekordy w trakcie pracy, sprawdź komunikat i podgląd przed zapisaniem.
 
 ## Microsoft Excel
 
@@ -82,11 +92,11 @@ Zdarzenia przewijania trafiają do zawartości wybranego okna, aby pasek adresu 
 
 1. Zainstaluj Python 3.11+ z obsługą Tkinter i zaznacz „Add Python to PATH”.
 2. Uruchom `start_app.bat`, aby uruchomić program z kodu.
-3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.14\MiniScreenShot_v1.1.14.exe` i paczkę `dist\MiniScreenShot_v1.1.14_windows.zip`.
+3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.15\MiniScreenShot_v1.1.15.exe` i paczkę `dist\MiniScreenShot_v1.1.15_windows.zip`.
 
-Budowanie korzysta z `MiniScreenShot_v1.1.14.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
+Budowanie korzysta z `MiniScreenShot_v1.1.15.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
 
-Paczka Windows 1.1.14 jest budowana na Pythonie 3.15 z Tk 9. Precyzyjne zdarzenia touchpada wymagają Tk 9; przy uruchamianiu kodu ze starszym Tk 8.6 ich obsługa może się różnić.
+Paczka Windows 1.1.15 jest budowana na Pythonie 3.15 z Tk 9. Precyzyjne zdarzenia touchpada wymagają Tk 9; przy uruchamianiu kodu ze starszym Tk 8.6 ich obsługa może się różnić.
 
 ## Cache i diagnostyka
 
@@ -131,6 +141,8 @@ Test rzeczywistego przechwytywania Windows: `python -m unittest test_scroll_live
 Test Firefoksa: `python -m unittest test_scroll_browser -v`. Otwiera lokalne strony w oddzielnym profilu w `build\browser-review`, sprawdza pełny zrzut przy płynnym przewijaniu, wąski panel CRM w nieruchomym interfejsie oraz brak loadera na obrazie. Nie korzysta z prywatnego profilu użytkownika.
 
 Test Chrome: `python -m unittest test_scroll_chrome -v`. Używa osobnego profilu w `build\chrome-review` i syntetycznej tabeli 48 leadów, z powtarzalną siatką oraz zmieniającymi się identyfikatorami. Lista rysuje wyłącznie widoczne rekordy na canvasie. Test porównuje wszystkie piksele połączonej listy z oryginałem, także przy opóźnieniu renderowania 1100 ms i rozpoczęciu od środka listy. Drugi test przechwytuje stronę o wysokości 5040 px z późno pojawiającym się banerem cookies i odświeżanym przyciskiem. Sprawdza pełną zawartość, pojedynczy baner, pasek Chrome oraz brak panelu postępu w pikselach. Nie korzysta z profilu ani danych ERP użytkownika.
+
+Test wielu paneli CRM: `python -m unittest test_scroll_panels test_scroll_panel_picker test_scroll_crm -v`. Sprawdza niezależny ruch menu i treści, pion, poziom i oba kierunki, anulowanie oraz pozycjonowanie zaznaczenia na monitorze po lewej stronie. Dwa testy prawdziwego Chrome uruchamiają przechwytywanie przyciskiem aplikacji: automatyczne z ruchomym menu i wskazanie małego panelu po prawej, gdy środek okna wypada nad menu. Porównują pełną treść podglądu i zapisanego PNG piksel po pikselu. Korzystają z syntetycznych danych i własnych profili w `build`, bez dostępu do kont CRM.
 
 Test Excela: `python -m unittest test_excel_scroll -v`. Tworzy osobną instancję i testowy skoroszyt: 85 wierszy z pustą przerwą, formatowanie do wiersza 40 000, inny arkusz z danymi do wiersza 5000 oraz tabelę 30 kolumn. Sprawdza koniec na danych aktywnego arkusza i zachowanie wstążki. Zamyka wyłącznie własny skoroszyt bez zapisu.
 

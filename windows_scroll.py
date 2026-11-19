@@ -104,12 +104,28 @@ class INPUT(ctypes.Structure):
     _fields_ = [("type", wintypes.DWORD), ("payload", INPUTPAYLOAD)]
 
 
+def validate_capture_region(region, size):
+    if region is None:
+        return None
+    try:
+        left, top, right, bottom = tuple(int(value) for value in region)
+        if 0 <= left <= right - 32 <= size[0] - 32 and 0 <= top <= bottom - 32 <= size[1] - 32:
+            return left, top, right, bottom
+    except (TypeError, ValueError, OverflowError):
+        pass
+    raise ScrollCaptureError("Wybrany panel musi mieścić się w oknie i mieć co najmniej 32 × 32 piksele.")
+
+
 class WindowsScrollDriver:
-    def __init__(self, window):
+    def __init__(self, window, capture_region=None):
         self.handle = window._hWnd
         self.original_cursor = win32api.GetCursorPos()
         self.bbox = self._client_bbox()
-        self.pointer = ((self.bbox[0] + self.bbox[2]) // 2, (self.bbox[1] + self.bbox[3]) // 2)
+        self.capture_region = validate_capture_region(capture_region,
+                                                     (self.bbox[2] - self.bbox[0], self.bbox[3] - self.bbox[1]))
+        region = self.capture_region or (0, 0, self.bbox[2] - self.bbox[0], self.bbox[3] - self.bbox[1])
+        self.pointer = (self.bbox[0] + (region[0] + region[2]) // 2,
+                        self.bbox[1] + (region[1] + region[3]) // 2)
         self.user32 = ctypes.WinDLL("user32", use_last_error=True)
         self.user32.GetScrollInfo.argtypes = [wintypes.HWND, ctypes.c_int, ctypes.POINTER(SCROLLINFO)]
         self.user32.GetScrollInfo.restype = wintypes.BOOL
@@ -120,7 +136,7 @@ class WindowsScrollDriver:
         self.frame_guard = nullcontext
         self._last_frame = None
         self._scroll_time = None
-        self._content_region = None
+        self._content_region = self.capture_region
         self._browser = win32gui.GetClassName(self.handle).startswith(("Mozilla", "Chrome_"))
         self._corner_style = None
         ensure_window_foreground(self.handle)
@@ -165,7 +181,7 @@ class WindowsScrollDriver:
         except OSError as exc:
             logger.warning("Direct rectangle capture unavailable; using Pillow: %s", exc)
         self._excel = None
-        if win32gui.GetClassName(self.handle) == "XLMAIN":
+        if self.capture_region is None and win32gui.GetClassName(self.handle) == "XLMAIN":
             try:
                 from excel_scroll import ExcelSheetScroll
                 self._excel = ExcelSheetScroll(self.handle, self.bbox)
@@ -229,6 +245,9 @@ class WindowsScrollDriver:
         self._check()
         if getattr(self, "_excel", None) is not None:
             return self._excel.at_edge(axis, direction)
+        if getattr(self, "capture_region", None) is not None:
+            # A parent's native scrollbar does not describe an inner panel.
+            return None
         handle = self.scroll_handles.get(axis)
         info = self._scroll_info(handle, axis) if handle else None
         if info is None:
@@ -272,9 +291,11 @@ class WindowsScrollDriver:
         self._scroll_time = time.monotonic()
 
     def set_content_region(self, region):
-        self._content_region = region
+        self._content_region = getattr(self, "capture_region", None) or region
 
     def capture_bounds(self, axes):
+        if getattr(self, "capture_region", None) is not None:
+            return self.capture_region, None
         return self._excel.capture_bounds(axes) if getattr(self, "_excel", None) is not None else None
 
     def scroll_displacement(self, axis):

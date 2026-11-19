@@ -104,6 +104,10 @@ class MainDashboard:
             self.scroll_switches.append(switch)
             self.option_labels.append(label)
 
+        self.panel_capture_button = self.ui.widget(RoundedButton, scroll_card, "Zrzut wybranego panelu",
+                                                   self._capture_scroll_panel, background=SURFACE, compact=True)
+        self.panel_capture_button.grid(row=3, column=0, sticky="ew", pady=(px(10), 0))
+
         output_card = tk.Frame(self.dashboard_body, bg=SURFACE, padx=px(18), pady=px(16),
                                highlightthickness=1, highlightbackground="#25324a")
         output_card.grid(row=4, column=0, sticky="ew", pady=(px(14), px(12)))
@@ -176,6 +180,9 @@ class MainDashboard:
             self.window_picker_card.grid_remove()
 
     def _update_capture_options(self):
+        if hasattr(self, "panel_capture_button"):
+            enabled = self.selected_mode == "window" and (self.vertical_var.get() or self.horizontal_var.get())
+            self.panel_capture_button.configure(state="normal" if enabled else "disabled")
         if self.selected_mode != "window":
             self.ui.set(self.scroll_hint, text="Dostępne w trybie „Okno aplikacji”.")
             return

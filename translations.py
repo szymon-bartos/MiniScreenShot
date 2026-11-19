@@ -1,6 +1,13 @@
 """English UI catalogue. Polish source strings remain the default language."""
 
 ENGLISH = {
+    "Zrzut wybranego panelu": "Capture a selected panel",
+    "Zaznacz samą przewijaną treść. Esc anuluje.": "Select only the scrolling content. Esc cancels.",
+    "Wybór panelu anulowany.": "Panel selection cancelled.",
+    "Zaznacz panel o rozmiarze co najmniej 32 × 32 piksele.": "Select a panel at least 32 × 32 pixels in size.",
+    "Wybrany panel musi mieścić się w oknie i mieć co najmniej 32 × 32 piksele.": "The selected panel must be inside the window and at least 32 × 32 pixels in size.",
+    "Nie udało się wybrać panelu: {error}": "Could not select a panel: {error}",
+    "Panel: {title} — {description}": "Panel: {title} — {description}",
     "Język": "Language",
     "Język zmieniono. Nie udało się zapamiętać wyboru.": "Language changed. Your preference could not be saved.",
     "Nowy zrzut ekranu": "New screenshot",

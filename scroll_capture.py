@@ -307,7 +307,9 @@ class ScrollingCapture:
         self.max_pixels = max_pixels
         self.max_output_pixels = max_output_pixels
         self.include_window_frame = include_window_frame
-        self.moving = self.viewport = None
+        selected = getattr(driver, "capture_region", None)
+        self.capture_region = tuple(selected) if isinstance(selected, (tuple, list)) and len(selected) == 4 else None
+        self.moving, self.viewport = self.capture_region, None
         self.approximate = False
         self.incomplete_reason = None
         self.frame_count = 0
@@ -332,8 +334,52 @@ class ScrollingCapture:
             return min(a.height - 12, round(expected) + 2)
 
     def _union_motion(self, first, second, axis, distance=None):
+        if self.capture_region is not None:
+            # Other CRM panes can animate or scroll independently. A chosen
+            # panel is a fixed viewport, not the union of all changing pixels.
+            return
         if distance:
             box, limits = translated_motion_bounds(first, second, axis, distance)
+            if box is not None and self.moving is not None:
+                # A separate scrolling menu or live sidebar must not expand
+                # the already registered content viewport. Admit new bands
+                # only when they translate with the same measured displacement.
+                cross_start, cross_end = (0, 2) if axis == "y" else (1, 3)
+                lower, upper = box[cross_start], box[cross_end]
+
+                def follows_content(band):
+                    x0, y0, x1, y1 = band
+                    if axis == "y":
+                        y1 = min(y1, first.height - distance)
+                        shifted = (x0, y0 + distance, x1, y1 + distance)
+                    else:
+                        x1 = min(x1, first.width - distance)
+                        shifted = (x0 + distance, y0, x1 + distance, y1)
+                    if x1 <= x0 or y1 <= y0:
+                        return False
+                    band = (x0, y0, x1, y1)
+                    target = second.crop(band)
+                    raw = ImageStat.Stat(frame_difference(first.crop(band), target)).mean[0]
+                    aligned = ImageStat.Stat(frame_difference(first.crop(shifted), target)).mean[0]
+                    return raw >= 3 and aligned <= min(20, raw * 0.65)
+
+                if lower < self.moving[cross_start]:
+                    band = ((lower, box[1], self.moving[0], box[3]) if axis == "y" else
+                            (box[0], lower, box[2], self.moving[1]))
+                    if not follows_content(band):
+                        lower = self.moving[cross_start]
+                if upper > self.moving[cross_end]:
+                    band = ((self.moving[2], box[1], upper, box[3]) if axis == "y" else
+                            (box[0], self.moving[3], box[2], upper))
+                    if not follows_content(band):
+                        upper = self.moving[cross_end]
+                if (lower, upper) != (box[cross_start], box[cross_end]):
+                    if upper <= lower:
+                        return
+                    area = (lower, 0, upper, first.height) if axis == "y" else (0, lower, first.width, upper)
+                    box, limits = translated_motion_bounds(first.crop(area), second.crop(area), axis, distance)
+                    if box is not None:
+                        box = (box[0] + area[0], box[1] + area[1], box[2] + area[0], box[3] + area[1])
             start, end = (1, 3) if axis == "y" else (0, 2)
             if "start" in limits:
                 self._fixed_limits[start] = max(self._fixed_limits.get(start, 0), limits["start"])
@@ -397,7 +443,9 @@ class ScrollingCapture:
                 return previous
             self.driver.scroll(axis, -1, 48)
             current = self.driver.snapshot()
-            unchanged = unchanged + 1 if scroll_frames_equal(previous, current, axis, stable_ratio=0.6) else 0
+            first = previous.crop(self.capture_region) if self.capture_region is not None else previous
+            second = current.crop(self.capture_region) if self.capture_region is not None else current
+            unchanged = unchanged + 1 if scroll_frames_equal(first, second, axis, stable_ratio=0.6) else 0
             if unchanged >= 2:
                 return current
             previous = current

@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from contextlib import contextmanager
 
-APP_VERSION = "1.1.14"
+APP_VERSION = "1.1.15"
 
 from tk_runtime import prepare_tk_runtime
 
@@ -20,6 +20,7 @@ from PIL import Image, ImageChops, ImageGrab, ImageTk
 import pyautogui
 import pygetwindow as gw
 from main_dashboard import MainDashboard
+from scroll_panel_picker import ScrollPanelPicker
 from preview_crop import InlineCropEditor
 from preview_annotations import PreviewAnnotations
 from window_catalog import window_process_id
@@ -65,18 +66,27 @@ def save_image(img: Image.Image, prefix: str) -> str:
 
 
 class SelectionOverlay(tk.Toplevel):
-    def __init__(self, callback, cancel_callback=None):
+    def __init__(self, callback, cancel_callback=None, bounds=None, instruction=None):
         super().__init__()
         apply_window_icon(self)
         self.callback = callback
         self.cancel_callback = cancel_callback
+        self.selection_bounds = bounds
         self.withdraw()
-        self.attributes("-fullscreen", True)
+        if bounds is None:
+            self.attributes("-fullscreen", True)
+        else:
+            self.overrideredirect(True)
+            self.geometry(f"{bounds[2] - bounds[0]}x{bounds[3] - bounds[1]}")
         self.attributes("-topmost", True)
-        self.attributes("-alpha", 0.20)
+        self.attributes("-alpha", 0.20 if bounds is None else 0.50)
         self.configure(bg="black")
         self.canvas = tk.Canvas(self, cursor="crosshair", bg="#000000", highlightthickness=0)
         self.canvas.pack(fill="both", expand=True)
+        if instruction:
+            self.canvas.create_text(18, 18, text=instruction, anchor="nw", fill="#ffffff",
+                                    font=("Segoe UI", 12, "bold"),
+                                    width=max(100, (bounds[2] - bounds[0] if bounds else self.winfo_screenwidth()) - 36))
         self.canvas.bind("<ButtonPress-1>", self.on_press)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
@@ -92,6 +102,16 @@ class SelectionOverlay(tk.Toplevel):
 
     def start_select(self):
         self.deiconify()
+        self.update_idletasks()
+        if self.selection_bounds is not None:
+            # Tk's negative geometry offsets are relative to the right/bottom
+            # screen edge. Native coordinates also cover monitors left of it.
+            import win32con
+            import win32gui
+            left, top, right, bottom = self.selection_bounds
+            handle = win32gui.GetAncestor(self.winfo_id(), win32con.GA_ROOT)
+            win32gui.SetWindowPos(handle, win32con.HWND_TOPMOST, left, top, right - left, bottom - top,
+                                 win32con.SWP_NOACTIVATE)
         self.focus_set()
         self.canvas.focus_set()
         self.canvas.update()
@@ -103,13 +123,14 @@ class SelectionOverlay(tk.Toplevel):
         self.current_y = event.y_root
         if self.rect:
             self.canvas.delete(self.rect)
-        self.rect = self.canvas.create_rectangle(self.start_x, self.start_y, self.current_x, self.current_y, outline="#7dd3fc", width=2)
+        self.start_canvas = (event.x, event.y)
+        self.rect = self.canvas.create_rectangle(event.x, event.y, event.x, event.y, outline="#7dd3fc", width=2)
 
     def on_drag(self, event):
         self.current_x = event.x_root
         self.current_y = event.y_root
         if self.rect:
-            self.canvas.coords(self.rect, self.start_x, self.start_y, self.current_x, self.current_y)
+            self.canvas.coords(self.rect, *self.start_canvas, event.x, event.y)
 
     def on_release(self, event):
         x1, x2 = sorted((self.start_x, event.x_root))
@@ -121,7 +142,7 @@ class SelectionOverlay(tk.Toplevel):
             self.cancel_callback()
 
 
-class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, InlineWindowPicker):
+class ScreenCaptureApp(MainDashboard, ScrollPanelPicker, InlineCropEditor, PreviewAnnotations, InlineWindowPicker):
     @property
     def ui(self):
         if not hasattr(self, "_ui"):
@@ -916,20 +937,21 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             self.capture_notice.grid()
             self.root.lift()
 
-    def _capture_scrolled_window(self, window):
+    def _capture_scrolled_window(self, window, capture_region=None):
         driver = None
         try:
             with self._hidden_capture_windows():
                 self._focus_window_if_possible(window)
                 time.sleep(0.25)
-                driver = WindowsScrollDriver(window)
+                driver = (WindowsScrollDriver(window) if capture_region is None else
+                          WindowsScrollDriver(window, capture_region=capture_region))
                 try:
                     if hasattr(self.root, "winfo_children"):
                         self.capture_progress = CaptureProgress(self.root, driver.bbox, ui=self.ui)
                         driver.pulse = self.capture_progress.pump
                         driver.frame_guard = self.capture_progress.capture_frame
                     engine = ScrollingCapture(driver, vertical=self.vertical_var.get(), horizontal=self.horizontal_var.get(),
-                                              progress=self._scroll_progress, include_window_frame=True)
+                                              progress=self._scroll_progress, include_window_frame=capture_region is None)
                     image = engine.capture()
                 finally:
                     if getattr(self, "capture_progress", None):
@@ -940,7 +962,8 @@ class ScreenCaptureApp(MainDashboard, InlineCropEditor, PreviewAnnotations, Inli
             reason = reason if isinstance(reason, str) else None
             no_movement = not reason and getattr(engine, "frame_count", None) == 1
             description = "zrzut częściowy" if reason else ("widoczny obszar" if no_movement else "z przewijaniem")
-            preview = self._capture_to_preview(image, "selected_window_scroll", msg("Okno: {title} — {description}", title=window.title, description=msg(description)))
+            title = "Okno: {title} — {description}" if capture_region is None else "Panel: {title} — {description}"
+            preview = self._capture_to_preview(image, "selected_window_scroll", msg(title, title=window.title, description=msg(description)))
             if reason:
                 self.ui.set(preview.heading, text="Zrzut częściowy", fg="#fbbf24")
                 self.ui.set(preview.source_label, text=reason)
