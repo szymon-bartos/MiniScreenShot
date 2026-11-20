@@ -7,6 +7,7 @@ import time
 import unittest
 from unittest.mock import patch
 from uuid import uuid4
+from contextlib import contextmanager
 
 from PIL import Image, ImageChops, ImageGrab
 import pygetwindow as gw
@@ -21,7 +22,7 @@ from test_scroll_capture import document_image
 
 @unittest.skipUnless(CHROME, "Chrome is not installed")
 class CrmPanelCaptureTests(unittest.TestCase):
-    def capture_crm(self, selected_panel):
+    def capture_crm(self, selected_panel, maximized=False):
         ctypes.windll.user32.SetProcessDPIAware()
         title = "MiniScreenShot multi-panel CRM " + uuid4().hex[:8]
         folder = Path("build/chrome-review") / title.rsplit(" ", 1)[-1]
@@ -68,6 +69,9 @@ class CrmPanelCaptureTests(unittest.TestCase):
                     break
                 time.sleep(.15)
             self.assertTrue(handle, "Chrome CRM fixture did not load")
+            if maximized:
+                win32gui.ShowWindow(handle, win32con.SW_MAXIMIZE)
+                time.sleep(.3)
             root = tk.Tk()
             app = ScreenCaptureApp(root, language="pl")
             root.update()
@@ -78,7 +82,21 @@ class CrmPanelCaptureTests(unittest.TestCase):
             app.vertical_var.set(True)
             root.update()
             previews = set(root.winfo_children())
-            with patch("app_advanced.messagebox.showinfo", side_effect=AssertionError("Unexpected confirmation")):
+            test = self
+            original_progress = app_advanced.CaptureProgress
+            visibility_samples = []
+
+            class SteadyProgress(original_progress):
+                @contextmanager
+                def capture_frame(self):
+                    with super().capture_frame():
+                        visible = bool(win32gui.IsWindowVisible(self.handle))
+                        visibility_samples.append(visible)
+                        test.assertTrue(visible, "Progress disappeared while Chrome was sampled")
+                        yield
+
+            with patch("app_advanced.messagebox.showinfo", side_effect=AssertionError("Unexpected confirmation")), \
+                    patch("app_advanced.CaptureProgress", SteadyProgress):
                 if selected_panel:
                     # Locate the fixture's magenta frame in client pixels. This
                     # avoids hard-coding Chrome's native toolbar/titlebar size.
@@ -114,6 +132,7 @@ class CrmPanelCaptureTests(unittest.TestCase):
                 else:
                     app.capture_action.invoke()
             root.update()
+            self.assertTrue(visibility_samples, "Browser test did not sample progress visibility")
             results = [item for item in root.winfo_children() if item not in previews and hasattr(item, "display_image")]
             self.assertEqual(len(results), 1, "CRM capture did not open a result preview")
             preview = results[0]
@@ -146,6 +165,9 @@ class CrmPanelCaptureTests(unittest.TestCase):
 
     def test_automatic_content_capture_ignores_independently_scrolling_menu(self):
         self.capture_crm(selected_panel=False)
+
+    def test_maximized_browser_keeps_progress_visible_and_saved_content_complete(self):
+        self.capture_crm(selected_panel=True, maximized=True)
 
 
 if __name__ == "__main__":

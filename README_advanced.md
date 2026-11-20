@@ -1,8 +1,8 @@
-# MiniScreenShot v1.1.15
+# MiniScreenShot v1.1.16
 
 **Autor i wydawca:** Szymon Bartos. Dane autora i wydawcy są dostępne w oknie „Informacje”; od 1.1.14 wydawca ma osobny, tłumaczony wiersz. Metadane EXE zawierają nazwę wydawcy oraz opis autora i wydawcy. Te wpisy identyfikują deklarowanego twórcę programu i nie zastępują podpisu Authenticode.
 
-Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.15.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.15\MiniScreenShot_v1.1.15.exe`. Python nie jest wymagany do korzystania z gotowego programu.
+Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.16.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.16\MiniScreenShot_v1.1.16.exe`. Python nie jest wymagany do korzystania z gotowego programu.
 
 Aplikacja obsługuje przechwytywanie ekranu i przewijanej zawartości, przycinanie oraz oznaczanie obrazu ołówkiem i półprzezroczystym mazakiem. Duże zrzuty z przewijaniem są proporcjonalnie zmniejszane do około 24 megapikseli lub mniej. Mniejsze zrzuty zachowują pełną rozdzielczość.
 
@@ -26,7 +26,7 @@ Jeśli środek okna wypada nad menu lub innym panelem, wybierz **Okno aplikacji*
 
 Esc anuluje wybór lub przechwytywanie. Zaznaczenie dotyczy pojedynczego zrzutu i nie jest zapamiętywane dla innych okien. Zmiana położenia lub rozmiaru okna w trakcie wyboru przerywa operację. Automatyczny zrzut pozostaje dostępny pod zwykłym przyciskiem i zachowuje otaczające paski raz.
 
-Wskazanie panelu nie odtwarza zasłoniętej lub niezaładowanej treści. Jeśli aplikacja nie pozwala przewinąć panelu albo zmienia rekordy w trakcie pracy, sprawdź komunikat i podgląd przed zapisaniem.
+Wskazanie panelu nie odtwarza zasłoniętej lub niezaładowanej treści. Jeśli aplikacja nie pozwala przewinąć panelu albo zmienia rekordy w trakcie pracy, sprawdź komunikat i podgląd przed zapisaniem. Automatyczne wykrywanie w złożonych układach z przyklejonymi panelami może nadal powielać boczne elementy; wskazanie samej treści pozwala je pominąć.
 
 ## Microsoft Excel
 
@@ -36,7 +36,9 @@ Przed przechwytywaniem zakończ edycję komórki i zamknij okna dialogowe Excela
 
 Przewijanie porównuje podobieństwo fragmentów zamiast wymagać identycznych pikseli, toleruje drobne zmiany wyglądu i mierzy rzeczywiste przesunięcie podczas składania. Doładowanie zawartości lub zmiana prędkości przewijania nie powoduje automatycznego odrzucenia zrzutu. Jeśli ponowne pobranie klatki nie daje pewnego dopasowania, ale obraz nadal pasuje do wcześniejszego przesunięcia, program dopuszcza niewielką zakładkę. Informuje wtedy o tym w panelu postępu i statusie końcowym.
 
-Podczas pracy pojawia się niewielki panel z animacją, bieżącym etapem i czasem. Nie przejmuje fokusu ani kółka myszy. Program ukrywa panel na cały czas pobierania i porównywania klatek oraz czeka na odświeżenie pulpitu, aby panel nie zostawiał czarnego prostokąta na obrazie. Esc anuluje przechwytywanie.
+Od 1.1.16 panel postępu pozostaje stale widoczny poza przechwytywanym oknem. W wolnym miejscu pulpitu ma formę karty; przy zmaksymalizowanym oknie może przyjąć formę wąskiego paska w obszarze paska zadań, poza granicami zrzutu. Pokazuje etap, czas, wskazówkę o nieruszaniu myszką i anulowanie przez Esc. Nie przejmuje fokusu ani kółka myszy i nie jest chowany między klatkami. Położenie uwzględnia skalowanie Windows i monitory po lewej stronie ekranu głównego.
+
+Jeśli pełny ekran obejmuje cały dostępny pulpit i nie ma miejsca na panel poza zrzutem, program ukrywa go raz przed pobieraniem obrazu i nie pokazuje ponownie między klatkami. Esc nadal anuluje przechwytywanie. Program nie zmienia rozmiaru okna źródłowego ani ustawień paska zadań.
 
 ## Główne okno
 
@@ -92,11 +94,11 @@ Zdarzenia przewijania trafiają do zawartości wybranego okna, aby pasek adresu 
 
 1. Zainstaluj Python 3.11+ z obsługą Tkinter i zaznacz „Add Python to PATH”.
 2. Uruchom `start_app.bat`, aby uruchomić program z kodu.
-3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.15\MiniScreenShot_v1.1.15.exe` i paczkę `dist\MiniScreenShot_v1.1.15_windows.zip`.
+3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.16\MiniScreenShot_v1.1.16.exe` i paczkę `dist\MiniScreenShot_v1.1.16_windows.zip`.
 
-Budowanie korzysta z `MiniScreenShot_v1.1.15.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
+Budowanie korzysta z `MiniScreenShot_v1.1.16.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
 
-Paczka Windows 1.1.15 jest budowana na Pythonie 3.15 z Tk 9. Precyzyjne zdarzenia touchpada wymagają Tk 9; przy uruchamianiu kodu ze starszym Tk 8.6 ich obsługa może się różnić.
+Paczka Windows 1.1.16 jest budowana na Pythonie 3.15 z Tk 9. Precyzyjne zdarzenia touchpada wymagają Tk 9; przy uruchamianiu kodu ze starszym Tk 8.6 ich obsługa może się różnić.
 
 ## Cache i diagnostyka
 
@@ -148,4 +150,4 @@ Test Excela: `python -m unittest test_excel_scroll -v`. Tworzy osobną instancj�
 
 Test dużej strony: `python -m unittest test_scroll_large -v`. Sprawdza proporcjonalne zmniejszenie źródłowych 71,1 MP do 22,5 MP, fragmenty z całej wysokości strony, brak drugiego przebiegu i zapis jednego PNG. Wymaga kilkuset MB wolnego miejsca na pliki robocze. `test_capture_scaling` sprawdza również zmianę skali podczas pracy, brak pustych pasów na łączeniach, pion, poziom i siatkę oraz zachowanie oryginalnych pikseli małych zrzutów.
 
-Test panelu postępu obejmuje również symulację ścieżki przechwytywania, która zastępuje widoczne chronione okno czarnym prostokątem. Wynik musi pozostać zgodny z oryginałem piksel po pikselu.
+Test panelu postępu: `python -m unittest test_capture_progress test_scroll_live test_scroll_crm -v`. Sprawdza stałą widoczność między klatkami, pasek przy maksymalizacji, układ PL/EN, skalowanie, drugi monitor i jednokrotne ukrycie bez wolnego miejsca. Test prawdziwego zmaksymalizowanego Chrome porównuje podgląd i zapisany PNG z pełną treścią. Test natywny obejmuje również ścieżkę, która zastępuje widoczne chronione okno czarnym prostokątem: wynik musi pozostać zgodny z oryginałem piksel po pikselu.

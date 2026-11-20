@@ -1,4 +1,4 @@
-"""Non-activating progress panel, hidden while source frames are sampled."""
+"""Non-activating progress placed outside captured pixels without flashing."""
 import ctypes
 import math
 import time
@@ -13,6 +13,43 @@ from ui_widgets import SURFACE, TEXT, MUTED
 from localization import LocalizedUI, msg
 
 
+def outside(rect, bbox):
+    return rect[2] <= bbox[0] or rect[0] >= bbox[2] or rect[3] <= bbox[1] or rect[1] >= bbox[3]
+
+
+def progress_placement(bbox, monitors, scale):
+    """Prefer a card beside the source; a compact strip can fit the taskbar."""
+    width, height = round(350 * scale), round(150 * scale)
+    compact_width, compact_height = round(760 * scale), round(36 * scale)
+
+    def candidates(area, size, gap):
+        left, top, right, bottom = area
+        bands = ((left, top, min(right, bbox[0]), bottom),
+                 (max(left, bbox[2]), top, right, bottom),
+                 (left, top, right, min(bottom, bbox[1])),
+                 (left, max(top, bbox[3]), right, bottom))
+        for x0, y0, x1, y1 in bands:
+            w, h = size
+            if x1 - x0 < w + 2 * gap or y1 - y0 < h + 2 * gap:
+                continue
+            x = min(x1 - w - gap, max(x0 + gap, bbox[2] - w - gap))
+            y = min(y1 - h - gap, max(y0 + gap, bbox[3] - h - gap))
+            yield (x, y, x + w, y + h)
+
+    for compact, key, size, gap in ((False, "Work", (width, height), round(8 * scale)),
+                                    (True, "Monitor", (compact_width, compact_height), max(1, round(2 * scale)))):
+        for monitor in monitors:
+            places = list(candidates(monitor[key], size, gap))
+            if places:
+                rect = min(places, key=lambda r: (r[2] - bbox[2]) ** 2 + (r[3] - bbox[3]) ** 2)
+                return rect, compact, True
+    # True full-screen with no spare monitor has no safe place for an overlay.
+    # Hide it once for the capture rather than toggling it for every frame.
+    work = monitors[0]["Work"]
+    x, y = max(work[0], work[2] - width - 8), max(work[1], work[3] - height - 8)
+    return (x, y, x + width, y + height), False, False
+
+
 class CaptureProgress:
     def __init__(self, root, bbox, ui=None):
         self.root = root
@@ -20,45 +57,54 @@ class CaptureProgress:
         self.started = time.monotonic()
         self.last_paint = 0
         self.closed = False
-        self._capture_depth = 0
         self.window = tk.Toplevel(root)
         self.window.withdraw()
         self.window.overrideredirect(True)
         # Layered + transparent makes mouse/wheel input pass to other processes.
-        self.window.attributes("-alpha", 0.97)
+        self.window.attributes("-alpha", 1.0)
         self.window.configure(bg="#334155")
         scale = root.winfo_fpixels("1i") / 96
         px = lambda value: round(value * scale)
-        width, height = px(350), px(150)
-        work = win32api.GetMonitorInfo(win32api.MonitorFromRect(bbox, 2))["Work"]
-        x = min(work[2] - width - px(16), max(work[0] + px(8), bbox[2] - width - px(16)))
-        y = min(work[3] - height - px(16), max(work[1] + px(8), bbox[3] - height - px(16)))
-        self.window.geometry(f"{width}x{height}{x:+d}{y:+d}")
-        card = tk.Frame(self.window, bg=SURFACE, padx=px(14), pady=px(12))
+        primary = win32api.MonitorFromRect(bbox, 2)
+        monitors = [primary] + [handle for handle, _, _ in win32api.EnumDisplayMonitors() if handle != primary]
+        rect, compact, self.outside_capture = progress_placement(bbox, [win32api.GetMonitorInfo(h) for h in monitors], scale)
+        x, y, right, bottom = rect
+        width, height = right - x, bottom - y
+        self.window.geometry(f"{width}x{height}")
+        card = tk.Frame(self.window, bg=SURFACE, padx=px(8 if compact else 14), pady=px(4 if compact else 12))
         card.pack(fill="both", expand=True, padx=1, pady=1)
         card.columnconfigure(1, weight=1)
-        self.spinner = tk.Canvas(card, width=px(28), height=px(28), bg=SURFACE, bd=0, highlightthickness=0)
-        self.spinner.grid(row=0, column=0, rowspan=2, padx=(0, px(12)))
-        self.spinner.create_oval(px(3), px(3), px(25), px(25), outline="#293854", width=px(3))
-        self.arc = self.spinner.create_arc(px(3), px(3), px(25), px(25), start=0, extent=100,
+        spinner_size = px(20 if compact else 28)
+        self.spinner = tk.Canvas(card, width=spinner_size, height=spinner_size, bg=SURFACE, bd=0, highlightthickness=0)
+        self.spinner.grid(row=0, column=0, rowspan=1 if compact else 2, padx=(0, px(12)))
+        self.spinner.create_oval(px(3), px(3), spinner_size - px(3), spinner_size - px(3), outline="#293854", width=px(3))
+        self.arc = self.spinner.create_arc(px(3), px(3), spinner_size - px(3), spinner_size - px(3), start=0, extent=100,
                                            outline="#a5b4fc", width=px(3), style="arc")
-        self.ui.widget(tk.Label, card, text="Tworzę pełny zrzut", font=("Segoe UI", 10, "bold"),
-                 fg=TEXT, bg=SURFACE, anchor="w").grid(row=0, column=1, sticky="ew")
+        if not compact:
+            self.ui.widget(tk.Label, card, text="Tworzę pełny zrzut", font=("Segoe UI", 10, "bold"),
+                           fg=TEXT, bg=SURFACE, anchor="w").grid(row=0, column=1, sticky="ew")
         self.phase = self.ui.widget(tk.Label, card, text="Ustalam granice zawartości…", font=("Segoe UI", 9),
-                              fg=MUTED, bg=SURFACE, anchor="w", justify="left", wraplength=px(270))
-        self.phase.grid(row=1, column=1, sticky="ew", pady=(px(3), 0))
+                              fg=MUTED, bg=SURFACE, anchor="w", justify="left", wraplength=0 if compact else px(270))
+        self.phase.grid(row=0 if compact else 1, column=1, sticky="ew", pady=0 if compact else (px(3), 0))
         self.capture_hint = self.ui.widget(tk.Label, card,
                                          text="Nie poruszaj myszką i nie przełączaj okna.",
                                          font=("Segoe UI", 9), fg="#fbbf24", bg=SURFACE,
-                                         anchor="w", justify="left", wraplength=px(320))
-        self.capture_hint.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(px(8), 0))
+                                         anchor="w", justify="left", wraplength=0 if compact else px(320))
+        self.capture_hint.grid(row=0 if compact else 2, column=2 if compact else 0,
+                               columnspan=1 if compact else 2, sticky="ew", padx=(px(12), px(12)) if compact else 0,
+                               pady=0 if compact else (px(8), 0))
         self.elapsed = self.ui.widget(tk.Label, card, font=("Segoe UI", 8), fg="#a5b4fc", bg=SURFACE, anchor="w")
-        self.elapsed.grid(row=3, column=1, sticky="ew", pady=(px(6), 0))
+        self.elapsed.grid(row=0 if compact else 3, column=3 if compact else 1, sticky="ew",
+                          pady=0 if compact else (px(6), 0))
+        if compact:
+            self.phase.configure(width=1)
         self.window.update_idletasks()
         self.handle = win32gui.GetAncestor(self.window.winfo_id(), 2)
         style = win32gui.GetWindowLong(self.handle, win32con.GWL_EXSTYLE)
         win32gui.SetWindowLong(self.handle, win32con.GWL_EXSTYLE,
-                              style | 0x08000000 | win32con.WS_EX_TOOLWINDOW | win32con.WS_EX_TRANSPARENT)
+                              style | 0x08000000 | win32con.WS_EX_TOOLWINDOW | win32con.WS_EX_TRANSPARENT | win32con.WS_EX_LAYERED)
+        win32gui.SetLayeredWindowAttributes(self.handle, 0, 255, win32con.LWA_ALPHA)
+        win32gui.SetWindowPos(self.handle, win32con.HWND_TOPMOST, x, y, width, height, win32con.SWP_NOACTIVATE)
         self.window.deiconify()
         self._show()
         self.pump()
@@ -84,19 +130,10 @@ class CaptureProgress:
 
     @contextmanager
     def capture_frame(self):
-        hide = not self.closed and self._capture_depth == 0 and win32gui.IsWindowVisible(self.handle)
-        self._capture_depth += 1
-        try:
-            if hide:
-                # Exclusion affinity can produce a black protected rectangle
-                # in GDI captures. Reveal the real source pixels instead.
-                win32gui.ShowWindow(self.handle, win32con.SW_HIDE)
-                ctypes.windll.dwmapi.DwmFlush()
-            yield
-        finally:
-            self._capture_depth -= 1
-            if hide and not self.closed:
-                self._show()
+        if not self.closed and not self.outside_capture and win32gui.IsWindowVisible(self.handle):
+            win32gui.ShowWindow(self.handle, win32con.SW_HIDE)
+            ctypes.windll.dwmapi.DwmFlush()
+        yield
 
     def close(self):
         if not self.closed:

@@ -155,7 +155,9 @@ class LiveScrollTests(unittest.TestCase):
         with self.app._hidden_capture_windows():
             self.app._focus_window_if_possible(self.window)
             driver = WindowsScrollDriver(self.window)
-            loader = CaptureProgress(self.root, driver.bbox)
+            left, top, _, _ = driver.bbox
+            with patch("capture_progress.progress_placement", return_value=((left, top, left + 350, top + 150), False, False)):
+                loader = CaptureProgress(self.root, driver.bbox)
             # Some desktop capture paths report exclusion support but redact
             # visible protected windows instead of recovering the pixels below.
             loader.excluded = True
