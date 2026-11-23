@@ -1,4 +1,4 @@
-# MiniScreenShot 1.1.17
+# MiniScreenShot 1.1.17 — kod źródłowy
 
 <img src="assets/capture-frame.png" alt="Logo MiniScreenShot" width="112">
 
@@ -8,9 +8,11 @@ Przenośna aplikacja do zrzutów ekranu dla Windows. Stworzone przez Szymona Bar
 
 ## Pobieranie
 
-**[Pobierz MiniScreenShot dla Windows](https://github.com/szymon-bartos/MiniScreenShot/releases/download/v1.1.17/MiniScreenShot_v1.1.17_windows.zip)**
+**[Ostatnia opublikowana paczka Windows: 1.1.16](https://github.com/szymon-bartos/MiniScreenShot/releases/download/v1.1.16/MiniScreenShot_v1.1.16_windows.zip)**
 
-Rozpakuj cały ZIP, a następnie uruchom `MiniScreenShot_v1.1.17.exe` z rozpakowanego folderu. Katalog `_internal` musi pozostać obok EXE. Python ani instalator nie są potrzebne. Wszystkie opublikowane wersje są dostępne w [wydaniach GitHub](https://github.com/szymon-bartos/MiniScreenShot/releases). Warunki korzystania znajdziesz w [LICENSE.txt](LICENSE.txt) oraz w aplikacji pod przyciskiem „Informacje”.
+Poprawka automatycznego zrzutu 1.1.17 jest dostępna w kodzie. Zbudowany EXE otrzymał lokalnie blokadę Smart App Control: błąd 4551 i zdarzenie Code Integrity 3077. Testy kodu przeszły, ale nie udało się potwierdzić startu EXE. Paczka 1.1.17 pozostaje robocza; 1.1.16 nie zawiera tej poprawki. Nie wyłączaj ochrony ani nie dodawaj wyjątków. [Zasady Smart App Control](https://learn.microsoft.com/windows/apps/develop/smart-app-control/overview).
+
+Opublikowane ZIP-y należy rozpakować w całości. Katalog `_internal` musi pozostać obok EXE; Python ani instalator nie są potrzebne do ich używania. Wszystkie opublikowane wersje są dostępne w [wydaniach GitHub](https://github.com/szymon-bartos/MiniScreenShot/releases). Warunki korzystania znajdziesz w [LICENSE.txt](LICENSE.txt) oraz w aplikacji pod przyciskiem „Informacje”.
 
 Do wydania dołączona jest suma SHA-256 archiwum. Potwierdza zgodność pobranego pliku z publikacją; nie zastępuje skanowania antywirusem ani podpisu cyfrowego.
 

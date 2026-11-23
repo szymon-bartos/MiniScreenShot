@@ -1,5 +1,7 @@
 # MiniScreenShot v1.1.17
 
+Status paczki 1.1.17: testy kodu i lokalny skan Defendera przeszły, ale start zbudowanego EXE został zablokowany przez Smart App Control (4551, Code Integrity 3077). Paczka pozostaje robocza; ostatnie opublikowane wydanie to 1.1.16. Opis funkcji 1.1.17 dotyczy aktualnego kodu. Skrypt budowania przerywa pracę po nieudanym teście startu EXE. Nie wyłączaj ochrony ani nie dodawaj wyjątków.
+
 **Autor i wydawca:** Szymon Bartos. Dane autora i wydawcy są dostępne w oknie „Informacje”; od 1.1.14 wydawca ma osobny, tłumaczony wiersz. Metadane EXE zawierają nazwę wydawcy oraz opis autora i wydawcy. Te wpisy identyfikują deklarowanego twórcę programu i nie zastępują podpisu Authenticode.
 
 Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.17.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.17\MiniScreenShot_v1.1.17.exe`. Python nie jest wymagany do korzystania z gotowego programu.
