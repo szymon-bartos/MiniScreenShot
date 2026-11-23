@@ -13,8 +13,8 @@ import win32con
 import win32gui
 
 
-executable = Path(sys.argv[1] if len(sys.argv) > 1 else "dist/MiniScreenShot_v1.1.16/MiniScreenShot_v1.1.16.exe").resolve()
-title = "MiniScreenShot v1.1.16"
+executable = Path(sys.argv[1] if len(sys.argv) > 1 else "dist/MiniScreenShot_v1.1.17/MiniScreenShot_v1.1.17.exe").resolve()
+title = "MiniScreenShot v1.1.17"
 
 assert win32api.GetFileVersionInfo(str(executable), r"\StringFileInfo\041504b0\CompanyName") == "Szymon Bartos"
 assert win32api.GetFileVersionInfo(str(executable), r"\StringFileInfo\041504b0\Comments") == "Autor i wydawca: Szymon Bartos"

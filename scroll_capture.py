@@ -82,6 +82,59 @@ def scroll_motion_region(first, second, axis, allow_offcenter=False, difference=
     return box if extent >= max(48, dimension * 0.15) and across >= 24 else None
 
 
+def motion_candidates(first, second, axis):
+    """Separate disconnected motion, e.g. a clock and an off-centre CRM list."""
+    difference = frame_difference(first, second)
+    box = motion_bounds(first, second, difference=difference)
+    if box is None:
+        return []
+    mask = difference.point([0] * 18 + [255] * 238)
+
+    def spans(values, gap):
+        start = end = None
+        for index, value in enumerate(values):
+            if value < 1:
+                continue
+            if end is not None and index - end > gap:
+                yield start, end + 1
+                start = None
+            if start is None:
+                start = index
+            end = index
+        if start is not None:
+            yield start, end + 1
+
+    cross_mask = mask if axis == "y" else mask.transpose(Image.Transpose.TRANSPOSE)
+    cross_box = box if axis == "y" else (box[1], box[0], box[3], box[2])
+    cropped = cross_mask.crop(cross_box)
+    groups = list(spans(cropped.resize((cropped.width, 1), Image.Resampling.BOX).tobytes(),
+                        max(12, cross_mask.width // 80)))
+    regions = []
+    for start, end in groups:
+        strip = cropped.crop((start, 0, end, cropped.height))
+        rows = list(spans(strip.resize((1, strip.height), Image.Resampling.BOX).tobytes(),
+                          max(48, cross_mask.height // 16)))
+        for top, bottom in rows:
+            if bottom - top < max(48, cross_mask.height * .15):
+                continue
+            # A wide status strip in a different row must not join panels
+            # that are otherwise separated horizontally.
+            block = strip.crop((0, top, strip.width, bottom))
+            for local_start, local_end in spans(block.resize((block.width, 1), Image.Resampling.BOX).tobytes(),
+                                                max(12, cross_mask.width // 80)):
+                if local_end - local_start < 24:
+                    continue
+                region = (cross_box[0] + start + local_start, cross_box[1] + top,
+                          cross_box[0] + start + local_end, cross_box[1] + bottom)
+                if axis == "x":
+                    region = (region[1], region[0], region[3], region[2])
+                regions.append(region)
+    centre = first.width // 2 if axis == "y" else first.height // 2
+    lo, hi = (0, 2) if axis == "y" else (1, 3)
+    regions.sort(key=lambda r: (not r[lo] <= centre < r[hi], -(r[2] - r[0]) * (r[3] - r[1])))
+    return regions
+
+
 def scroll_frames_equal(first, second, axis, stable_ratio=0.8):
     if first.size != second.size:
         return False
@@ -95,6 +148,9 @@ def scroll_frames_equal(first, second, axis, stable_ratio=0.8):
     # Check whether their changing identifiers actually translate before
     # classifying the frame as stationary.
     try:
+        for region in motion_candidates(first, second, axis):
+            if region != box and estimate_shift(first.crop(region), second.crop(region), axis):
+                return False
         return estimate_shift(first, second, axis) == 0
     except ScrollCaptureError:
         # Seeking backwards can jump farther than one viewport. A changed
@@ -270,6 +326,21 @@ def translated_motion_bounds(first, second, axis, distance):
             proof = (columns[0], rows[0], columns[2], rows[-1] + 1)
     if proof is not None:
         left, top, right, bottom = box
+        # A status bar can connect the change masks of a fixed sidebar and
+        # the scrolling body. Discard textured side bands only when shifting
+        # them makes the match worse; preserve blank margins/repeated cells.
+        for side in ("left", "right"):
+            x0, x1 = (left, proof[0]) if side == "left" else (proof[2], right)
+            area = (x0, top, x1, min(bottom, aligned.height))
+            if area[2] - area[0] < 4 or area[3] <= area[1]:
+                continue
+            unshifted_score = ImageStat.Stat(raw.crop(area)).mean[0]
+            shifted_score = ImageStat.Stat(aligned.crop(area)).mean[0]
+            if shifted_score > max(5, unshifted_score + 2):
+                if side == "left":
+                    left = proof[0]
+                else:
+                    right = proof[2]
         # Locate fixed pixels themselves, rather than trimming at the last
         # textured document row: blank page margins still belong to the page.
         same = raw_full.point([255] * 5 + [0] * 251)
@@ -333,12 +404,21 @@ class ScrollingCapture:
             self.progress("Drobne różnice obrazu — łączę z niewielką zakładką…")
             return min(a.height - 12, round(expected) + 2)
 
-    def _union_motion(self, first, second, axis, distance=None):
+    def _union_motion(self, first, second, axis, distance=None, registered_region=None):
         if self.capture_region is not None:
             # Other CRM panes can animate or scroll independently. A chosen
             # panel is a fixed viewport, not the union of all changing pixels.
             return
         if distance:
+            if registered_region is not None:
+                # Keep unrelated header/side-panel redraws out of registration,
+                # including the first step before a viewport exists.
+                second = second.copy()
+                left, top, right, bottom = registered_region
+                excluded = ((0, 0, first.width, top), (0, bottom, first.width, first.height),
+                            (0, top, left, bottom), (right, top, first.width, bottom))
+                for area in excluded:
+                    second.paste(first.crop(area), area[:2])
             box, limits = translated_motion_bounds(first, second, axis, distance)
             if box is not None and self.moving is not None:
                 # A separate scrolling menu or live sidebar must not expand
@@ -471,8 +551,22 @@ class ScrollingCapture:
                         region = candidate
             region = region or (0, 0, previous.width, previous.height)
             first, second = previous.crop(region), current.crop(region)
+            registered_region = None
+            distance = None
+            if measured is None and self.capture_region is None and self.moving is None:
+                for candidate in motion_candidates(previous, current, axis):
+                    if candidate == region:
+                        continue
+                    try:
+                        candidate_distance = estimate_shift(previous.crop(candidate), current.crop(candidate), axis, expected)
+                    except ScrollCaptureError:
+                        continue
+                    if candidate_distance:
+                        distance, registered_region = candidate_distance, candidate
+                        break
             try:
-                distance = measured if measured is not None else estimate_shift(first, second, axis, expected)
+                if distance is None:
+                    distance = measured if measured is not None else estimate_shift(first, second, axis, expected)
             except ScrollCaptureError:
                 self.progress("Dopasowuję fragment po odświeżeniu strony…")
                 current = self.driver.snapshot()
@@ -484,7 +578,7 @@ class ScrollingCapture:
                     raise ScrollCaptureError("Okno nie pokazuje przesunięcia zawartości. Zachowano wcześniejszą część.")
                 continue
             if measured is None:
-                self._union_motion(previous, current, axis, distance)
+                self._union_motion(previous, current, axis, distance, registered_region=registered_region)
             logger.info("Scroll displacement: axis=%s pixels=%s content=%s", axis, distance, self.moving)
             set_region = getattr(self.driver, "set_content_region", None)
             if set_region is not None:

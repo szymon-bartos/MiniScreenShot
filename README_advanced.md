@@ -1,8 +1,8 @@
-# MiniScreenShot v1.1.16
+# MiniScreenShot v1.1.17
 
 **Autor i wydawca:** Szymon Bartos. Dane autora i wydawcy są dostępne w oknie „Informacje”; od 1.1.14 wydawca ma osobny, tłumaczony wiersz. Metadane EXE zawierają nazwę wydawcy oraz opis autora i wydawcy. Te wpisy identyfikują deklarowanego twórcę programu i nie zastępują podpisu Authenticode.
 
-Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.16.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.16\MiniScreenShot_v1.1.16.exe`. Python nie jest wymagany do korzystania z gotowego programu.
+Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.17.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.17\MiniScreenShot_v1.1.17.exe`. Python nie jest wymagany do korzystania z gotowego programu.
 
 Aplikacja obsługuje przechwytywanie ekranu i przewijanej zawartości, przycinanie oraz oznaczanie obrazu ołówkiem i półprzezroczystym mazakiem. Duże zrzuty z przewijaniem są proporcjonalnie zmniejszane do około 24 megapikseli lub mniej. Mniejsze zrzuty zachowują pełną rozdzielczość.
 
@@ -19,6 +19,8 @@ W powtarzalnych tabelach ERP nieruchoma siatka i jednakowe etykiety nie przesła
 Stałe banery przy krawędzi, np. dolny komunikat cookies, są oddzielane od przesuwającej się treści i umieszczane raz na końcu obrazu. Dotyczy to również banerów pojawiających się dopiero podczas przewijania i takich, w których zmienia się przycisk lub licznik. Dolny pasek pochodzi z ostatniej klatki. Program nie zamyka komunikatów strony ani nie akceptuje cookies. Nie może odtworzyć treści, która przez cały czas pozostaje zasłonięta; przed zrzutem można samodzielnie zamknąć taki komunikat.
 
 ## CRM: niezależnie przewijane menu i treść
+
+Od 1.1.17 automatyczny zrzut rozdziela zmiany w odległych obszarach okna: np. animowany licznik w nagłówku i przewijaną listę po prawej. Dopasowuje przesunięcie treści osobno, zamiast porównywać ją razem z nieruchomym menu. Ta sama kontrola działa przy szukaniu początku zawartości. Zapobiega zakończeniu z jednym górnym fragmentem, mimo że lista faktycznie się przewinęła. Zmiany poza dopasowanym panelem nie powiększają wykrytych granic treści.
 
 Od 1.1.15 automatyczne wykrywanie nie rozszerza już zarejestrowanej treści o boczny panel, który zaczyna poruszać się niezależnie. Nowy fragment musi pasować do przesunięcia przechwytywanej zawartości. Zapobiega to błędnemu łączeniu menu z treścią i przedwczesnemu zakończeniu zrzutu.
 
@@ -94,11 +96,11 @@ Zdarzenia przewijania trafiają do zawartości wybranego okna, aby pasek adresu 
 
 1. Zainstaluj Python 3.11+ z obsługą Tkinter i zaznacz „Add Python to PATH”.
 2. Uruchom `start_app.bat`, aby uruchomić program z kodu.
-3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.16\MiniScreenShot_v1.1.16.exe` i paczkę `dist\MiniScreenShot_v1.1.16_windows.zip`.
+3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.17\MiniScreenShot_v1.1.17.exe` i paczkę `dist\MiniScreenShot_v1.1.17_windows.zip`.
 
-Budowanie korzysta z `MiniScreenShot_v1.1.16.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
+Budowanie korzysta z `MiniScreenShot_v1.1.17.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
 
-Paczka Windows 1.1.16 jest budowana na Pythonie 3.15 z Tk 9. Precyzyjne zdarzenia touchpada wymagają Tk 9; przy uruchamianiu kodu ze starszym Tk 8.6 ich obsługa może się różnić.
+Paczka Windows 1.1.17 jest budowana na Pythonie 3.15 z Tk 9. Precyzyjne zdarzenia touchpada wymagają Tk 9; przy uruchamianiu kodu ze starszym Tk 8.6 ich obsługa może się różnić.
 
 ## Cache i diagnostyka
 
@@ -144,7 +146,7 @@ Test Firefoksa: `python -m unittest test_scroll_browser -v`. Otwiera lokalne str
 
 Test Chrome: `python -m unittest test_scroll_chrome -v`. Używa osobnego profilu w `build\chrome-review` i syntetycznej tabeli 48 leadów, z powtarzalną siatką oraz zmieniającymi się identyfikatorami. Lista rysuje wyłącznie widoczne rekordy na canvasie. Test porównuje wszystkie piksele połączonej listy z oryginałem, także przy opóźnieniu renderowania 1100 ms i rozpoczęciu od środka listy. Drugi test przechwytuje stronę o wysokości 5040 px z późno pojawiającym się banerem cookies i odświeżanym przyciskiem. Sprawdza pełną zawartość, pojedynczy baner, pasek Chrome oraz brak panelu postępu w pikselach. Nie korzysta z profilu ani danych ERP użytkownika.
 
-Test wielu paneli CRM: `python -m unittest test_scroll_panels test_scroll_panel_picker test_scroll_crm -v`. Sprawdza niezależny ruch menu i treści, pion, poziom i oba kierunki, anulowanie oraz pozycjonowanie zaznaczenia na monitorze po lewej stronie. Dwa testy prawdziwego Chrome uruchamiają przechwytywanie przyciskiem aplikacji: automatyczne z ruchomym menu i wskazanie małego panelu po prawej, gdy środek okna wypada nad menu. Porównują pełną treść podglądu i zapisanego PNG piksel po pikselu. Korzystają z syntetycznych danych i własnych profili w `build`, bez dostępu do kont CRM.
+Test wielu paneli CRM: `python -m unittest test_scroll_detection test_scroll_panels test_scroll_panel_picker test_scroll_crm -v`. Obejmuje animowany nagłówek obok małej listy, licznik nad treścią, rozpoczęcie od środka i oba kierunki. W kontrolnym przypadku 1.1.16 przewija listę, lecz zachowuje tylko jedną klatkę; 1.1.17 zachowuje pełne 350 × 2240 px. Testy prawdziwego Chrome uruchamiają zwykły przycisk zrzutu oraz wybór panelu, również przy zmaksymalizowanym oknie. Porównują pełną treść podglądu i faktycznie zapisanego PNG piksel po pikselu. Osobne przypadki sprawdzają niezależny ruch menu, anulowanie oraz pozycjonowanie na monitorze po lewej stronie. Korzystają z syntetycznych danych i własnych profili w `build`, bez dostępu do kont CRM.
 
 Test Excela: `python -m unittest test_excel_scroll -v`. Tworzy osobną instancję i testowy skoroszyt: 85 wierszy z pustą przerwą, formatowanie do wiersza 40 000, inny arkusz z danymi do wiersza 5000 oraz tabelę 30 kolumn. Sprawdza koniec na danych aktywnego arkusza i zachowanie wstążki. Zamyka wyłącznie własny skoroszyt bez zapisu.
 

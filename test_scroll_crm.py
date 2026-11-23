@@ -22,14 +22,16 @@ from test_scroll_capture import document_image
 
 @unittest.skipUnless(CHROME, "Chrome is not installed")
 class CrmPanelCaptureTests(unittest.TestCase):
-    def capture_crm(self, selected_panel, maximized=False):
+    def capture_crm(self, selected_panel, maximized=False, busy_header=False):
         ctypes.windll.user32.SetProcessDPIAware()
         title = "MiniScreenShot multi-panel CRM " + uuid4().hex[:8]
         folder = Path("build/chrome-review") / title.rsplit(" ", 1)[-1]
         folder.mkdir(parents=True)
         width, height = (240, 180) if selected_panel else (640, 420)
         left = 670 if selected_panel else 320
-        document = document_image(width, 1113)
+        if busy_header:
+            width, height, left = 350, 500, 620
+        document = document_image(width, 2240 if busy_header else 1113)
         document.save(folder / "content.png")
         document_image(600 if selected_panel else 280, 1900).save(folder / "menu.png")
         html = (f'<!doctype html><title>{title}</title><style>'
@@ -51,11 +53,16 @@ class CrmPanelCaptureTests(unittest.TestCase):
                 'addEventListener("load",()=>{document.title=base+" ready menu=0 body=0"});'
                 '</script>')
         page = folder / "index.html"
+        if busy_header:
+            document_image(1400, 1000).save(folder / "background.png")
+            html = html.replace('</style>', 'body{background:url(background.png)}#clock{position:absolute;left:20px;top:20px;width:45px;height:45px}#status{position:fixed;bottom:0;left:0;right:0;height:20px}</style>')
+            html = html.replace('<main id="content">', '<div id="clock"></div><div id="status"></div><main id="content">')
+            html = html.replace('</script>', 'let tick=0;setInterval(()=>{tick++;for(let id of ["clock","status"])document.getElementById(id).style.background=`rgb(${tick*47%255},${tick*73%255},${tick*113%255})`},140);</script>')
         page.write_text(html, encoding="utf-8")
         process = subprocess.Popen([
             str(CHROME), "--user-data-dir=" + str((folder / "profile").resolve()),
             "--no-first-run", "--no-default-browser-check", "--disable-background-networking",
-            "--disable-sync", "--force-device-scale-factor=1", "--window-size=1100,840",
+            "--disable-sync", "--force-device-scale-factor=1", "--window-size=" + ("1400,940" if busy_header else "1100,840"),
             "--window-position=60,60", "--new-window", page.resolve().as_uri(),
         ], creationflags=subprocess.CREATE_NO_WINDOW)
         root = None
@@ -168,6 +175,9 @@ class CrmPanelCaptureTests(unittest.TestCase):
 
     def test_maximized_browser_keeps_progress_visible_and_saved_content_complete(self):
         self.capture_crm(selected_panel=True, maximized=True)
+
+    def test_automatic_capture_saves_full_right_hand_list_beside_animated_header(self):
+        self.capture_crm(selected_panel=False, busy_header=True)
 
 
 if __name__ == "__main__":

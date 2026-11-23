@@ -1,5 +1,6 @@
 """Spool captured frames once, then assemble without a second scroll pass."""
 from dataclasses import dataclass
+from collections import Counter
 from contextlib import contextmanager
 import atexit
 import math
@@ -161,6 +162,15 @@ class CaptureStore:
         self._fit_scale(original_size)
         size = tuple(max(1, round(value * self.scale)) for value in original_size)
         scale_x, scale_y = size[0] / original_size[0], size[1] / original_size[1]
+        background = (255, 255, 255)
+        if include_window_frame:
+            # Fixed sidebars are kept once. Fill the space below them with
+            # the page's prevailing background instead of a white stripe.
+            with self._open_frame(self.frames[0]) as source:
+                sample = source.convert("RGB").resize((48, 48), Image.Resampling.NEAREST)
+                color, count = Counter(sample.getpixel((x, y)) for y in range(48) for x in range(48)).most_common(1)[0]
+                if count >= 48 * 48 * .05:
+                    background = color
         backing = None
         if size[0] * size[1] > self.memory_pixels:
             backing = _ImageBacking(size)
@@ -171,7 +181,7 @@ class CaptureStore:
             # at interpreter shutdown when a preview still owns the image.
             atexit.register(_close_live_image, weakref.ref(result))
         else:
-            result = Image.new("RGB", size, "white")
+            result = Image.new("RGB", size, background)
         def paste(tile, destination):
             if backing is None:
                 result.paste(tile, destination)
@@ -186,7 +196,7 @@ class CaptureStore:
         try:
             if include_window_frame:
                 if backing is not None:
-                    block = b"\xff" * min(len(backing.buffer), 1024**2)
+                    block = bytes((*background, 255)) * min(len(backing.buffer) // 4, 256 * 1024)
                     for start in range(0, len(backing.buffer), len(block)):
                         length = min(len(block), len(backing.buffer) - start)
                         backing.buffer[start:start + length] = block[:length]
