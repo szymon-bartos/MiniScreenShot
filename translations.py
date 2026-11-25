@@ -1,6 +1,8 @@
 """English UI catalogue. Polish source strings remain the default language."""
 
 ENGLISH = {
+    "Obszar zrzutu nie mieści się w całości na podłączonych ekranach. Przesuń okno na ekran i ponów zrzut.": "The capture area is not fully visible on the connected displays. Move the window onto a display and try again.",
+    "Układ lub rozdzielczość monitorów zmieniły się podczas zrzutu. Uruchom zrzut ponownie.": "The display layout or resolution changed during capture. Start the capture again.",
     "Zrzut wybranego panelu": "Capture a selected panel",
     "Zaznacz samą przewijaną treść. Esc anuluje.": "Select only the scrolling content. Esc cancels.",
     "Wybór panelu anulowany.": "Panel selection cancelled.",

@@ -14,6 +14,7 @@ from PIL import Image, ImageChops, ImageGrab
 
 from scroll_capture import CaptureCancelled, ScrollCaptureError, frames_equal, scroll_frames_equal, scroll_motion_region, frame_difference
 from desktop_capture import DesktopFrameGrabber
+from windows_coordinates import client_bounds, monitor_rectangles, physical_coordinates, rectangle_visible
 
 logger = logging.getLogger(__name__)
 
@@ -117,12 +118,19 @@ def validate_capture_region(region, size):
 
 
 class WindowsScrollDriver:
+    @physical_coordinates
     def __init__(self, window, capture_region=None):
         self.handle = window._hWnd
         self.original_cursor = win32api.GetCursorPos()
         self.bbox = self._client_bbox()
         self.capture_region = validate_capture_region(capture_region,
                                                      (self.bbox[2] - self.bbox[0], self.bbox[3] - self.bbox[1]))
+        self._display_layout = monitor_rectangles()
+        captured = self.bbox if self.capture_region is None else (
+            self.bbox[0] + self.capture_region[0], self.bbox[1] + self.capture_region[1],
+            self.bbox[0] + self.capture_region[2], self.bbox[1] + self.capture_region[3])
+        if not rectangle_visible(captured, self._display_layout):
+            raise ScrollCaptureError("Obszar zrzutu nie mieści się w całości na podłączonych ekranach. Przesuń okno na ekran i ponów zrzut.")
         region = self.capture_region or (0, 0, self.bbox[2] - self.bbox[0], self.bbox[3] - self.bbox[1])
         self.pointer = (self.bbox[0] + (region[0] + region[2]) // 2,
                         self.bbox[1] + (region[1] + region[3]) // 2)
@@ -196,10 +204,7 @@ class WindowsScrollDriver:
     def _client_bbox(self):
         if not win32gui.IsWindow(self.handle):
             raise ScrollCaptureError("Wybrane okno zostało zamknięte.")
-        left, top, right, bottom = win32gui.GetClientRect(self.handle)
-        start = win32gui.ClientToScreen(self.handle, (left, top))
-        end = win32gui.ClientToScreen(self.handle, (right, bottom))
-        return (*start, *end)
+        return client_bounds(self.handle)
 
     def check_cancelled(self):
         getattr(self, "pulse", lambda: None)()
@@ -208,6 +213,8 @@ class WindowsScrollDriver:
 
     def _check(self):
         self.check_cancelled()
+        if getattr(self, "_display_layout", None) is not None and monitor_rectangles() != self._display_layout:
+            raise ScrollCaptureError("Układ lub rozdzielczość monitorów zmieniły się podczas zrzutu. Uruchom zrzut ponownie.")
         if self._client_bbox() != self.bbox:
             raise ScrollCaptureError("Położenie lub rozmiar okna zmieniły się podczas zrzutu.")
         if foreground_matches(self.handle):
@@ -255,6 +262,7 @@ class WindowsScrollDriver:
         end = max(info.nMin, info.nMax - info.nPage + 1)
         return info.nPos <= info.nMin if direction < 0 else info.nPos >= end
 
+    @physical_coordinates
     def scroll(self, axis, direction, units):
         self._check()
         self._scroll_axis = axis
@@ -301,6 +309,7 @@ class WindowsScrollDriver:
     def scroll_displacement(self, axis):
         return self._excel.delta[axis] if getattr(self, "_excel", None) is not None else None
 
+    @physical_coordinates
     def snapshot(self):
         # Keep the panel hidden across the whole settling interval, rather
         # than flashing it between each of the intermediate GDI samples.
@@ -354,6 +363,7 @@ class WindowsScrollDriver:
                     self._grabber = None
             return ImageGrab.grab(bbox=self.bbox, all_screens=True)
 
+    @physical_coordinates
     def close(self):
         try:
             if self._grabber is not None:

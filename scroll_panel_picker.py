@@ -1,14 +1,7 @@
 """Choose one scrolling viewport when a window contains independent panes."""
-import win32gui
-
 from localization import msg
 from window_catalog import window_is_available
-
-
-def client_bounds(handle):
-    left, top, right, bottom = win32gui.GetClientRect(handle)
-    return (*win32gui.ClientToScreen(handle, (left, top)),
-            *win32gui.ClientToScreen(handle, (right, bottom)))
+from windows_coordinates import client_bounds
 
 
 class ScrollPanelPicker:

@@ -11,6 +11,7 @@ import win32api
 
 from ui_widgets import SURFACE, TEXT, MUTED
 from localization import LocalizedUI, msg
+from windows_coordinates import physical_coordinates
 
 
 def outside(rect, bbox):
@@ -51,6 +52,7 @@ def progress_placement(bbox, monitors, scale):
 
 
 class CaptureProgress:
+    @physical_coordinates
     def __init__(self, root, bbox, ui=None):
         self.root = root
         self.ui = ui if ui is not None else LocalizedUI()
@@ -109,6 +111,7 @@ class CaptureProgress:
         self._show()
         self.pump()
 
+    @physical_coordinates
     def _show(self):
         win32gui.SetWindowPos(self.handle, win32con.HWND_TOPMOST, 0, 0, 0, 0,
                               win32con.SWP_NOACTIVATE | win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW)

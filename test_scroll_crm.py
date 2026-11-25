@@ -18,11 +18,12 @@ import app_advanced
 from app_advanced import ScreenCaptureApp, tk
 from test_scroll_chrome import CHROME
 from test_scroll_capture import document_image
+from windows_coordinates import monitor_rectangles, physical_pixels
 
 
 @unittest.skipUnless(CHROME, "Chrome is not installed")
 class CrmPanelCaptureTests(unittest.TestCase):
-    def capture_crm(self, selected_panel, maximized=False, busy_header=False):
+    def capture_crm(self, selected_panel, maximized=False, busy_header=False, display=None):
         ctypes.windll.user32.SetProcessDPIAware()
         title = "MiniScreenShot multi-panel CRM " + uuid4().hex[:8]
         folder = Path("build/chrome-review") / title.rsplit(" ", 1)[-1]
@@ -76,6 +77,12 @@ class CrmPanelCaptureTests(unittest.TestCase):
                     break
                 time.sleep(.15)
             self.assertTrue(handle, "Chrome CRM fixture did not load")
+            if display is not None:
+                with physical_pixels():
+                    width = min(1100, display[2] - display[0] - 32)
+                    height = min(840, display[3] - display[1] - 32)
+                    win32gui.SetWindowPos(handle, 0, display[0] + 16, display[1] + 16, width, height, 0)
+                    time.sleep(.3)
             if maximized:
                 win32gui.ShowWindow(handle, win32con.SW_MAXIMIZE)
                 time.sleep(.3)
@@ -178,6 +185,17 @@ class CrmPanelCaptureTests(unittest.TestCase):
 
     def test_automatic_capture_saves_full_right_hand_list_beside_animated_header(self):
         self.capture_crm(selected_panel=False, busy_header=True)
+
+    def test_automatic_scrolling_on_secondary_connected_displays(self):
+        import win32api
+        with physical_pixels():
+            primary = win32api.GetMonitorInfo(win32api.MonitorFromPoint((0, 0), 1))["Monitor"]
+            secondary = [rect for rect in monitor_rectangles() if rect != primary]
+        if not secondary:
+            self.skipTest("A second physical display is not connected; simulated layouts are covered by test_multi_monitor")
+        for display in secondary:
+            with self.subTest(display=display):
+                self.capture_crm(selected_panel=False, display=display)
 
 
 if __name__ == "__main__":

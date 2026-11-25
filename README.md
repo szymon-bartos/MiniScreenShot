@@ -1,4 +1,4 @@
-# MiniScreenShot 1.1.17 — kod źródłowy
+# MiniScreenShot 1.1.18
 
 <img src="assets/capture-frame.png" alt="Logo MiniScreenShot" width="112">
 
@@ -8,11 +8,11 @@ Przenośna aplikacja do zrzutów ekranu dla Windows. Stworzone przez Szymona Bar
 
 ## Pobieranie
 
-**[Ostatnia opublikowana paczka Windows: 1.1.16](https://github.com/szymon-bartos/MiniScreenShot/releases/download/v1.1.16/MiniScreenShot_v1.1.16_windows.zip)**
+**[Pobierz MiniScreenShot 1.1.18 dla Windows](https://github.com/szymon-bartos/MiniScreenShot/releases/download/v1.1.18/MiniScreenShot_v1.1.18_windows.zip)**
 
-Poprawka automatycznego zrzutu 1.1.17 jest dostępna w kodzie. Zbudowany EXE otrzymał lokalnie blokadę Smart App Control: błąd 4551 i zdarzenie Code Integrity 3077. Testy kodu przeszły, ale nie udało się potwierdzić startu EXE. Paczka 1.1.17 pozostaje robocza; 1.1.16 nie zawiera tej poprawki. Nie wyłączaj ochrony ani nie dodawaj wyjątków. [Zasady Smart App Control](https://learn.microsoft.com/windows/apps/develop/smart-app-control/overview).
+Wersja 1.1.18 zawiera poprawki automatycznego zrzutu z 1.1.17 oraz współrzędnych wielu monitorów. Rozpakuj cały ZIP i uruchom `MiniScreenShot_v1.1.18.exe`. Katalog `_internal` musi pozostać obok EXE; Python ani instalator nie są potrzebne do korzystania z paczki.
 
-Opublikowane ZIP-y należy rozpakować w całości. Katalog `_internal` musi pozostać obok EXE; Python ani instalator nie są potrzebne do ich używania. Wszystkie opublikowane wersje są dostępne w [wydaniach GitHub](https://github.com/szymon-bartos/MiniScreenShot/releases). Warunki korzystania znajdziesz w [LICENSE.txt](LICENSE.txt) oraz w aplikacji pod przyciskiem „Informacje”.
+Wszystkie opublikowane wersje są dostępne w [wydaniach GitHub](https://github.com/szymon-bartos/MiniScreenShot/releases). Warunki korzystania znajdziesz w [LICENSE.txt](LICENSE.txt) oraz w aplikacji pod przyciskiem „Informacje”.
 
 Do wydania dołączona jest suma SHA-256 archiwum. Potwierdza zgodność pobranego pliku z publikacją; nie zastępuje skanowania antywirusem ani podpisu cyfrowego.
 
@@ -27,6 +27,7 @@ Dla wersji 1.1.4 zgłoszono alarm przy uruchamianiu: `Behavior:Win32/DefenseEvas
 ## Funkcje
 
 - Zrzut całego ekranu, wybranego okna lub zaznaczonego obszaru.
+- Fizyczne współrzędne okna i pikseli przy wielu monitorach, także gdy drugi ekran leży po lewej lub nad głównym. Obszar wychodzący poza ekrany lub w lukę między nimi daje komunikat zamiast zrzutu z czarnym pasem.
 - Przechwytywanie przewijanej zawartości w pionie i poziomie, z łączeniem fragmentów podczas jednego przejścia.
 - Zachowanie paska narzędzi aplikacji jeden raz nad połączoną zawartością.
 - Stałe dolne banery, np. komunikat cookies, zachowywane raz na końcu zrzutu, także gdy pojawią się podczas przewijania lub odświeżają przyciski.
@@ -60,7 +61,7 @@ Choose **Polski** or **English** from **Język / Language** at the top of the ma
 Wymagany jest Windows oraz Python 3.11 lub nowszy z Tkinterem.
 
 1. Uruchom `start_app.bat`, aby uruchomić aplikację z kodu.
-2. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.17\MiniScreenShot_v1.1.17.exe` i pełną paczkę `dist\MiniScreenShot_v1.1.17_windows.zip`. Skrypt przygotowuje środowisko i instaluje zależności z przypiętymi wersjami. Biblioteki nie są pakowane przez UPX.
+2. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.18\MiniScreenShot_v1.1.18.exe` i pełną paczkę `dist\MiniScreenShot_v1.1.18_windows.zip`. Skrypt przygotowuje środowisko i instaluje zależności z przypiętymi wersjami. Biblioteki nie są pakowane przez UPX. ZIP powstaje po pomyślnym teście uruchomienia EXE.
 
 Głównym plikiem aplikacji jest `app_advanced.py`. Szczegółowa obsługa, ograniczenia przewijania i polecenia sprawdzające są opisane w [README_advanced.md](README_advanced.md).
 

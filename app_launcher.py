@@ -3,6 +3,7 @@ import ctypes
 import importlib
 import logging
 import sys
+from windows_coordinates import configure_process_dpi
 
 
 def show_startup_error():
@@ -28,6 +29,7 @@ def show_startup_error():
 
 def run_application():
     try:
+        configure_process_dpi()
         application = importlib.import_module("app_advanced")
         application.main()
         return 0

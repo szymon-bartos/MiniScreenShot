@@ -2,6 +2,7 @@
 import ctypes
 from ctypes import wintypes
 from PIL import Image
+from windows_coordinates import physical_coordinates
 
 
 class BITMAPINFOHEADER(ctypes.Structure):
@@ -12,6 +13,7 @@ class BITMAPINFOHEADER(ctypes.Structure):
 
 
 class DesktopFrameGrabber:
+    @physical_coordinates
     def __init__(self, bbox):
         self.bbox = bbox
         self.size = (bbox[2] - bbox[0], bbox[3] - bbox[1])
@@ -52,6 +54,7 @@ class DesktopFrameGrabber:
             self.close()
             raise
 
+    @physical_coordinates
     def grab(self):
         if not self.gdi32.BitBlt(self.memory_dc, 0, 0, *self.size, self.screen_dc, *self.bbox[:2], 0x00CC0020):
             raise ctypes.WinError(ctypes.get_last_error())
@@ -59,6 +62,7 @@ class DesktopFrameGrabber:
         data = ctypes.string_at(self.pixels, self.size[0] * self.size[1] * 4)
         return Image.frombytes("RGB", self.size, data, "raw", "BGRX", 0, 1)
 
+    @physical_coordinates
     def close(self):
         try:
             if self.memory_dc is not None:

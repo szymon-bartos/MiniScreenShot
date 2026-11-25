@@ -187,7 +187,7 @@ class CaptureTargetingTests(unittest.TestCase):
         self.app._show_capture_warning = lambda: None
         with patch("app_advanced.time.sleep"), patch("app_advanced.ImageGrab.grab", return_value=Image.new("RGB", (600, 400))) as grab, patch.object(self.app, "_capture_to_preview"):
             self.app._capture_window_obj(window)
-        grab.assert_called_once_with(bbox=(50, 80, 650, 480))
+        grab.assert_called_once_with(bbox=(50, 80, 650, 480), all_screens=True)
 
     def test_focus_keeps_maximized_window_size(self):
         window = DummyWindow("Strona - Chrome", 0, 0, 1920, 1080, minimized=False)
@@ -196,6 +196,17 @@ class CaptureTargetingTests(unittest.TestCase):
         self.app._focus_window_if_possible(window)
         window.restore.assert_not_called()
         window.activate.assert_called_once_with()
+
+    def test_window_on_the_left_display_uses_the_whole_virtual_desktop(self):
+        window = DummyWindow("Raport", -1500, 80, -900, 480, minimized=False)
+        self.app.vertical_var = type("Option", (), {"get": lambda self: False})()
+        self.app.horizontal_var = self.app.vertical_var
+        self.app._show_capture_warning = lambda: None
+        with patch("app_advanced.time.sleep"), \
+                patch("app_advanced.ImageGrab.grab", return_value=Image.new("RGB", (600, 400))) as grab, \
+                patch.object(self.app, "_capture_to_preview"):
+            self.app._capture_window_obj(window)
+        grab.assert_called_once_with(bbox=(-1500, 80, -900, 480), all_screens=True)
 
     def test_default_capture_dir_is_on_c_drive(self):
         from app_advanced import DEFAULT_CAPTURE_DIR

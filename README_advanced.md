@@ -1,10 +1,10 @@
-# MiniScreenShot v1.1.17
+# MiniScreenShot v1.1.18
 
-Status paczki 1.1.17: testy kodu i lokalny skan Defendera przeszły, ale start zbudowanego EXE został zablokowany przez Smart App Control (4551, Code Integrity 3077). Paczka pozostaje robocza; ostatnie opublikowane wydanie to 1.1.16. Opis funkcji 1.1.17 dotyczy aktualnego kodu. Skrypt budowania przerywa pracę po nieudanym teście startu EXE. Nie wyłączaj ochrony ani nie dodawaj wyjątków.
+Paczka 1.1.18 przeszła lokalny test startu i zamknięcia EXE oraz kontrolę manifestu Per-Monitor V2. Wcześniejsza 1.1.17 pozostała robocza po lokalnej blokadzie Smart App Control. Wynik weryfikacji konkretnej paczki jest dołączany do wydania; nie oznacza on gwarancji uruchomienia na każdym komputerze. Skrypt budowania przerywa pracę po nieudanym teście startu EXE.
 
 **Autor i wydawca:** Szymon Bartos. Dane autora i wydawcy są dostępne w oknie „Informacje”; od 1.1.14 wydawca ma osobny, tłumaczony wiersz. Metadane EXE zawierają nazwę wydawcy oraz opis autora i wydawcy. Te wpisy identyfikują deklarowanego twórcę programu i nie zastępują podpisu Authenticode.
 
-Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.17.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.17\MiniScreenShot_v1.1.17.exe`. Python nie jest wymagany do korzystania z gotowego programu.
+Przenośny program do zrzutów ekranu na Windows. Rozpakuj pełną paczkę ZIP i uruchom `MiniScreenShot_v1.1.18.exe`, zachowując sąsiedni katalog `_internal`. Lokalny wynik budowania to `dist\MiniScreenShot_v1.1.18\MiniScreenShot_v1.1.18.exe`. Python nie jest wymagany do korzystania z gotowego programu.
 
 Aplikacja obsługuje przechwytywanie ekranu i przewijanej zawartości, przycinanie oraz oznaczanie obrazu ołówkiem i półprzezroczystym mazakiem. Duże zrzuty z przewijaniem są proporcjonalnie zmniejszane do około 24 megapikseli lub mniej. Mniejsze zrzuty zachowują pełną rozdzielczość.
 
@@ -94,15 +94,23 @@ Od 1.1.13 zrzut z przewijaniem rozpoczyna się bez okna wymagającego potwierdze
 
 Zdarzenia przewijania trafiają do zawartości wybranego okna, aby pasek adresu lub inne pole z fokusem nie przejmowało kółka.
 
+## Wiele monitorów
+
+Od 1.1.18 granice okna, punkt przewijania, panel postępu i odczyt obrazu używają fizycznych pikseli pulpitu. Program zachowuje ujemne współrzędne ekranów po lewej i nad głównym. Manifest EXE określa Per-Monitor V2; uruchomienie z kodu ustawia ten tryb przed importem bibliotek GUI. Przechwytywanie zachowuje poprawne współrzędne także w starszym kontekście DPI programu uruchamiającego. Zwykły zrzut okna i wycinek korzystają z całego wirtualnego pulpitu.
+
+Przechwytywany obszar musi znajdować się w całości na podłączonych ekranach. Okno może przechodzić przez granicę sąsiadujących monitorów. Gdy jego część wychodzi poza ekran albo trafia w lukę między ekranami różnej wysokości lub położenia, aplikacja prosi o przesunięcie okna i nie zapisuje brakującego obszaru jako czarnego pasa. Przy wyborze konkretnego panelu warunek dotyczy zaznaczonej treści. Zmiana układu lub rozdzielczości monitorów przerywa przechwytywanie; uzyskane wcześniej fragmenty mogą pozostać jako zrzut częściowy.
+
+Testy: `python -m unittest test_multi_monitor test_scroll_crm -v`. Test natywny porównuje piksele własnego okna z odczytem Pillow na każdym wykrytym ekranie oraz sprawdza starszy kontekst DPI. Osobne symulacje sprawdzają zapis całej treści PNG przy ekranie z lewej, prawej, nad i pod głównym oraz przy oknie przechodzącym przez granicę ekranów, dla jednakowych skal 100% i 150%. Test Chrome na dodatkowych monitorach jest pomijany, jeśli środowisko nie udostępnia osobnego obszaru drugiego ekranu. Testy symulacyjne nie zastępują weryfikacji na fizycznym zestawie monitorów.
+
 ## Uruchomienie kodu i budowanie EXE
 
 1. Zainstaluj Python 3.11+ z obsługą Tkinter i zaznacz „Add Python to PATH”.
 2. Uruchom `start_app.bat`, aby uruchomić program z kodu.
-3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.17\MiniScreenShot_v1.1.17.exe` i paczkę `dist\MiniScreenShot_v1.1.17_windows.zip`.
+3. Uruchom `build_advanced_exe.bat`, aby zbudować `dist\MiniScreenShot_v1.1.18\MiniScreenShot_v1.1.18.exe` i paczkę `dist\MiniScreenShot_v1.1.18_windows.zip`.
 
-Budowanie korzysta z `MiniScreenShot_v1.1.17.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
+Budowanie korzysta z `MiniScreenShot_v1.1.18.spec` w trybie folderowym, bez UPX. Zasoby Tcl/Tk dostarczane w archiwach ZIP z Pythonem 3.15 są przygotowywane podczas budowania i dołączane do paczki. Przy przenoszeniu programu zachowaj cały katalog `_internal` obok EXE.
 
-Paczka Windows 1.1.17 jest budowana na Pythonie 3.15 z Tk 9. Precyzyjne zdarzenia touchpada wymagają Tk 9; przy uruchamianiu kodu ze starszym Tk 8.6 ich obsługa może się różnić.
+Paczka Windows 1.1.18 jest budowana na Pythonie 3.15 z Tk 9. Precyzyjne zdarzenia touchpada wymagają Tk 9; przy uruchamianiu kodu ze starszym Tk 8.6 ich obsługa może się różnić.
 
 ## Cache i diagnostyka
 

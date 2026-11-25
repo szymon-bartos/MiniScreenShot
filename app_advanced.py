@@ -6,8 +6,11 @@ import time
 from datetime import datetime
 from pathlib import Path
 from contextlib import contextmanager
+from windows_coordinates import configure_process_dpi, physical_coordinates
 
-APP_VERSION = "1.1.17"
+configure_process_dpi()
+
+APP_VERSION = "1.1.18"
 
 from tk_runtime import prepare_tk_runtime
 
@@ -66,6 +69,7 @@ def save_image(img: Image.Image, prefix: str) -> str:
 
 
 class SelectionOverlay(tk.Toplevel):
+    @physical_coordinates
     def __init__(self, callback, cancel_callback=None, bounds=None, instruction=None):
         super().__init__()
         apply_window_icon(self)
@@ -100,6 +104,7 @@ class SelectionOverlay(tk.Toplevel):
         if self.cancel_callback:
             self.cancel_callback()
 
+    @physical_coordinates
     def start_select(self):
         self.deiconify()
         self.update_idletasks()
@@ -778,6 +783,7 @@ class ScreenCaptureApp(MainDashboard, ScrollPanelPicker, InlineCropEditor, Previ
             self.ui.dialog(messagebox.showerror, "Błąd", error_message(exc))
             self.set_status("Błąd zrzutu całego ekranu.")
 
+    @physical_coordinates
     def _window_bbox(self, window):
         try:
             left = int(window.left)
@@ -890,7 +896,7 @@ class ScreenCaptureApp(MainDashboard, ScrollPanelPicker, InlineCropEditor, Previ
                 bbox = self._window_bbox(window)
                 if bbox is None:
                     raise ValueError("Wybrane okno nie ma prawidłowych wymiarów.")
-                img = ImageGrab.grab(bbox=bbox)
+                img = ImageGrab.grab(bbox=bbox, all_screens=True)
             self._capture_to_preview(img, "selected_window", msg("Okno: {title} - podgląd", title=window.title))
         except Exception as exc:
             self.ui.dialog(messagebox.showerror, "Błąd", error_message(exc))
@@ -996,7 +1002,7 @@ class ScreenCaptureApp(MainDashboard, ScrollPanelPicker, InlineCropEditor, Previ
         x1, y1, x2, y2 = selection
         try:
             time.sleep(0.12)
-            img = ImageGrab.grab(bbox=(x1, y1, x2, y2))
+            img = ImageGrab.grab(bbox=(x1, y1, x2, y2), all_screens=True)
             self._restore_capture_windows(getattr(self, "_area_window_states", []))
             self._area_window_states = []
             self._capture_to_preview(img, "selected_area", msg("Zaznaczony wycinek - podgląd"))

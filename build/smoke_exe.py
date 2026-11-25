@@ -11,10 +11,11 @@ import pefile
 import win32api
 import win32con
 import win32gui
+from xml.etree import ElementTree
 
 
-executable = Path(sys.argv[1] if len(sys.argv) > 1 else "dist/MiniScreenShot_v1.1.17/MiniScreenShot_v1.1.17.exe").resolve()
-title = "MiniScreenShot v1.1.17"
+executable = Path(sys.argv[1] if len(sys.argv) > 1 else "dist/MiniScreenShot_v1.1.18/MiniScreenShot_v1.1.18.exe").resolve()
+title = "MiniScreenShot v1.1.18"
 
 assert win32api.GetFileVersionInfo(str(executable), r"\StringFileInfo\041504b0\CompanyName") == "Szymon Bartos"
 assert win32api.GetFileVersionInfo(str(executable), r"\StringFileInfo\041504b0\Comments") == "Autor i wydawca: Szymon Bartos"
@@ -41,9 +42,15 @@ try:
     frames = {win32api.LoadResource(module, win32con.RT_ICON, resource)
               for resource in win32api.EnumResourceNames(module, win32con.RT_ICON)}
     assert expected_frames.issubset(frames), "EXE does not contain the intended icon frames"
+    manifest = ElementTree.fromstring(win32api.LoadResource(module, 24, 1))  # RT_MANIFEST
+    dpi = manifest.find(".//{http://schemas.microsoft.com/SMI/2016/WindowsSettings}dpiAwareness")
+    assert dpi is not None and dpi.text == "PerMonitorV2,PerMonitor", "EXE is missing per-monitor DPI awareness"
+    privileges = manifest.find(".//{urn:schemas-microsoft-com:asm.v3}requestedExecutionLevel")
+    assert privileges is not None and privileges.get("level") == "asInvoker"
 finally:
     win32api.FreeLibrary(module)
 print("EXE icon resources: 10 intended resolutions, OK")
+print("EXE manifest: PerMonitorV2, normal user privileges, OK")
 existing = {window._hWnd for window in gw.getAllWindows()}
 process = subprocess.Popen([str(executable)], creationflags=subprocess.CREATE_NO_WINDOW)
 window = None
